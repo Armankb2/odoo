@@ -6,8 +6,10 @@ An HRMS that digitizes core HR operations: employee onboarding and profiles,
 attendance tracking, leave and time-off management, payroll visibility, and
 approval workflows for HR/Admin.
 
-**Status:** scaffolding complete, application not started. The tech stack has
-not been chosen yet — see `docs/TASKS.md`.
+**Status:** requirements analysed and stack chosen; application not started.
+
+**Stack:** React (Vite) + Node (Express) + MySQL 8, with Prisma, TanStack
+Query, React Hook Form and Tailwind/shadcn. See `docs/TECH_STACK.md`.
 
 ## What's here
 
@@ -15,10 +17,18 @@ not been chosen yet — see `docs/TASKS.md`.
 .
 ├── README.md              # You are here
 └── docs/
-    ├── PROBLEM_STATEMENT.md   # Full requirements (extracted from the PDF)
+    ├── ANALYSIS.md            # Both sources reconciled — read this first
+    ├── WIREFRAME_SPEC.md      # Screens, fields and rules from the wireframe
+    ├── TECH_STACK.md          # Stack and the reasoning behind it
+    ├── PROBLEM_STATEMENT.md   # The original PDF brief, extracted
     ├── Dayflow - ... .pdf     # Original requirements document
+    ├── ... - 8 hours.excalidraw  # Original wireframes
     └── TASKS.md               # Task list and status
 ```
+
+Read `docs/ANALYSIS.md` first. There are two requirement sources and they
+**contradict each other** on registration, attendance, leave balances and
+payroll — the wireframe is the authoritative one.
 
 ## Features (from the spec)
 

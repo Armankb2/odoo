@@ -101,6 +101,35 @@ model LoginIdSequence {
   @@id([companyId, year])
 }
 
+/// Email verification codes for sign-up (PDF §3.1.1 "email verification is
+/// required").
+///
+/// A table rather than an in-memory Map on purpose: `tsx watch` restarts the
+/// dev server on every file save, and an in-memory store would silently drop
+/// every pending code mid-signup. It also means the code survives a deploy and
+/// works if the API is ever run as more than one process.
+///
+/// The code is stored HASHED. It is short-lived and only six digits, but it is
+/// still a credential, and a leaked database should not hand out live codes.
+model EmailVerification {
+  id    Int    @id @default(autoincrement())
+  email String @db.VarChar(150)
+
+  codeHash  String    @db.VarChar(255)
+  expiresAt DateTime
+  /// Bounded so a six-digit code cannot be brute-forced: 10^6 guesses is
+  /// nothing for a script, a handful of attempts is everything.
+  attempts  Int       @default(0)
+  /// Set once the code has been used to create an account. A consumed row is
+  /// never accepted again, so a code cannot register two users.
+  consumedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  /// Lookups are always "the newest live code for this email".
+  @@index([email, createdAt])
+}
+
 // ---------------------------------------------------------------- people
 
 /// One table, not a User/Employee split: in this system every employee IS a

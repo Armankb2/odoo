@@ -14,7 +14,7 @@ a live MySQL instance. Salary engine and the React frontend are not started.
 
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /api/auth/{signup,login,logout,change-password}`, `GET /api/auth/me` |
+| Auth | `POST /api/auth/{send-otp,signup,login,logout,change-password}`, `GET /api/auth/me` |
 | Employees | `GET /api/employees`, `GET/PATCH /api/employees/:id`, `POST /api/employees`, `PATCH /api/employees/:id/deactivate` |
 | Attendance | `GET /api/attendance/{today,me}`, `POST /api/attendance/{check-in,check-out}`, `GET /api/attendance` (admin), `GET /api/attendance/{user,payable}/:id` |
 | Time Off | `GET /api/leave/{types,balance,requests}`, `POST /api/leave/requests`, `PATCH /api/leave/requests/:id/{approve,reject}`, `DELETE /api/leave/requests/:id`, `POST /api/leave/allocations` |
@@ -35,7 +35,7 @@ Requires Node 22+ and a local MySQL 8 instance. Two terminals.
 # 1 — API
 cd server
 npm install
-cp .env.example .env        # then set DATABASE_URL and JWT_SECRET
+cp .env.example .env        # DATABASE_URL, JWT_SECRET, and SMTP_* for email
 npm run db:migrate          # create the schema
 npm run db:seed             # company config, 9 users, attendance, leave
 npm run dev                 # http://localhost:4000
@@ -50,6 +50,33 @@ Vite proxies `/api` and `/uploads` to the API, so everything is same-origin in
 development and there is no CORS to configure.
 
 `npm run db:studio` (in `server/`) opens a browsable view of the database.
+
+### Email verification
+
+Sign-up mails a **six-digit code** to the address entered and will not create
+the account until that code is typed back in (PDF §3.1.1). Configure SMTP in
+`server/.env`:
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASS=your16charapppassword
+MAIL_FROM="Dayflow HRMS <you@gmail.com>"
+OTP_TTL_MINUTES=10
+```
+
+Gmail requires an **app password** (Google Account → Security → 2-Step
+Verification → App passwords), not the account password, and the 16 characters
+go in **without the spaces** Google shows them with. Port 587 is STARTTLS —
+port 465 also works and the code switches to implicit TLS automatically.
+
+**Without SMTP configured the app still works**: the code is printed to the
+server console instead of emailed, and the sign-up form tells you so.
+
+Codes expire after 10 minutes, die after 5 wrong guesses, and cannot be reused.
+Requesting a new one retires the previous one, with a 60-second cooldown
+between requests.
 
 ### Signing in
 
@@ -153,6 +180,18 @@ to sit alongside it and was treated as authoritative where the two disagreed —
 it has since been deleted, so the PDF stands alone. Code comments that justify
 behaviour with "the wireframe shows…" predate that and should be checked
 against the PDF rather than trusted.
+
+## Profile pictures
+
+Anyone can set their own, and an admin can set anyone's, from the profile
+header — **Upload photo** / **Change photo** / **Remove**. Falls back to the
+person's initials when there is no picture.
+
+`POST /api/employees/:id/avatar` (multipart, field `avatar`) and
+`DELETE /api/employees/:id/avatar`. JPEG, PNG or WebP, up to 5 MB. Files land
+in `server/uploads/` (gitignored) under a random UUID name — the uploaded
+filename is never used — and are served from `/uploads`. Replacing a picture
+deletes the previous file.
 
 ## Who sees what
 

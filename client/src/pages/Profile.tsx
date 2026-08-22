@@ -23,7 +23,7 @@ const EDITABLE = [
 ] as const;
 
 export function Profile() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const { data, error, loading, reload } = useAsync(
     () => api.get<{ employee: EmployeeFull }>(`/api/employees/${user!.id}`),
     [user?.id],
@@ -63,7 +63,16 @@ export function Profile() {
   return (
     <section className="profile-page">
       <PageHeader title="My Profile" />
-      <ProfileHeader e={data.employee} />
+      {/* Your own picture is always yours to change. `refresh()` as well as
+          `reload()` so the avatar in the top-right nav updates too, not just
+          this page. */}
+      <ProfileHeader
+        e={data.employee}
+        onAvatarChange={() => {
+          reload();
+          void refresh();
+        }}
+      />
 
       <form className="profile-form" onSubmit={onSave}>
         <h3>Edit my details</h3>

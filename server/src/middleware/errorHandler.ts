@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
+import { MulterError } from 'multer';
 import { AppError } from '../lib/errors';
 
 /**
@@ -56,6 +57,19 @@ function formatError(err: unknown, res: Response) {
         details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message })),
       },
     });
+  }
+
+  // Multer rejects oversized or unexpected files by throwing, and without this
+  // an over-limit upload returns a generic 500 "Something went wrong" — which
+  // tells the user nothing about the actual problem.
+  if (err instanceof MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'That file is too large. The maximum is 5 MB.'
+        : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE'
+          ? 'Upload one file at a time.'
+          : `Upload failed: ${err.message}`;
+    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message } });
   }
 
   // Translate Prisma's error codes here rather than leaking a 500 with a stack

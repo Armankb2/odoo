@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, requirePasswordChanged } from '../middleware/requireAuth';
 import { assertCanAccessUser, requireRole } from '../middleware/requireRole';
@@ -10,6 +10,7 @@ import {
   updateEmployee,
 } from '../services/employee.service';
 import { prisma } from '../lib/prisma';
+import { publicUrlFor, removeUploadedFile, uploadImage } from '../lib/upload';
 import { validation } from '../lib/errors';
 import { statusForUsers } from '../services/attendance.service';
 
@@ -89,6 +90,74 @@ employeeRouter.get('/:id', async (req, res, next) => {
     if (!Number.isInteger(id)) throw validation('Invalid employee id');
     assertCanAccessUser(req.user, id);
     res.json({ employee: await getEmployee(req.user!, id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Profile picture upload.
+ *
+ * Own record or admin, same rule as reading the record. The access check runs
+ * as its own middleware **before** multer, so an unauthorised request is
+ * refused without ever writing a file to disk — putting `assertCanAccessUser`
+ * in the handler would mean the upload lands first and is deleted after, if
+ * anyone remembers to.
+ */
+function assertMayEditAvatar(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) throw validation('Invalid employee id');
+    assertCanAccessUser(req.user, id);
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+employeeRouter.post(
+  '/:id/avatar',
+  assertMayEditAvatar,
+  uploadImage.single('avatar'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) throw validation('Choose an image to upload');
+      const id = Number(req.params.id);
+
+      const current = await prisma.user.findUnique({
+        where: { id },
+        select: { avatarUrl: true },
+      });
+      if (!current) throw validation('Employee not found');
+
+      const avatarUrl = publicUrlFor(req.file.filename);
+      await prisma.user.update({ where: { id }, data: { avatarUrl } });
+
+      // Only after the new URL is safely committed. Deleting first would lose
+      // the old picture if the update then failed.
+      removeUploadedFile(current.avatarUrl);
+
+      res.json({ avatarUrl });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/** Remove the picture and fall back to the initials. */
+employeeRouter.delete('/:id/avatar', assertMayEditAvatar, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const current = await prisma.user.findUnique({
+      where: { id },
+      select: { avatarUrl: true },
+    });
+    if (!current) throw validation('Employee not found');
+
+    await prisma.user.update({ where: { id }, data: { avatarUrl: null } });
+    removeUploadedFile(current.avatarUrl);
+
+    res.json({ avatarUrl: null });
   } catch (err) {
     next(err);
   }

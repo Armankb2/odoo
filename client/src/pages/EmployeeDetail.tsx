@@ -45,7 +45,15 @@ export function EmployeeDetail() {
       <p className="view-only-note">
         {isAdmin ? 'Read-only view — use Edit to make changes.' : 'This profile is read-only.'}
       </p>
-      <ProfileHeader e={e} />
+      {/* Admins may set anyone's picture; an employee reaching their own
+          record through this route can set their own. Anyone else gets the
+          read-only header, and the server enforces the same rule. */}
+      <ProfileHeader
+        e={e}
+        onAvatarChange={
+          user?.role === 'ADMIN' || user?.id === e.id ? () => reload() : undefined
+        }
+      />
       <ProfileTabs e={e} onSalarySaved={reload} />
     </section>
   );

@@ -32,6 +32,8 @@ Status: `todo` → `in-progress` → `done`. One branch per task; never commit t
 | 18 | Single company; role chosen at sign-up and sign-in; fixed admin | `feat-single-company-auth` | done |
 | 19 | Fix: employees could list every colleague (admin-only now) | `fix-employee-scope-and-calendar` | done |
 | 20 | Employee attendance as a colour-coded month calendar | `fix-employee-scope-and-calendar` | done |
+| 21 | Email verification: OTP mailed at sign-up | `feat-email-otp-verification` | done |
+| 22 | Profile picture upload (replaces the initials fallback) | `feat-avatar-upload` | done |
 
 "done (API)" means the backend endpoint exists and is tested.
 

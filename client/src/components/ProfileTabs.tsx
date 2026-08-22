@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Field } from './common';
 import { dmy } from '../lib/format';
 import { SalaryPanel, type SalaryBreakdown } from './SalaryPanel';
+import { AvatarUploader } from './AvatarUploader';
 
 export interface EmployeeFull {
   id: number;
@@ -39,11 +40,32 @@ export interface EmployeeFull {
   salary?: SalaryBreakdown | null;
 }
 
-/** Header block shown above the tabs on both the read-only and own-profile views. */
-export function ProfileHeader({ e }: { e: EmployeeFull }) {
+/**
+ * Header block shown above the tabs on both the read-only and own-profile
+ * views.
+ *
+ * `onAvatarChange` is what turns the picture into an editable one. Pass it on
+ * your own profile, or on anyone's as an admin; omit it and the header stays
+ * read-only. The server applies the same rule regardless of what is passed.
+ */
+export function ProfileHeader({
+  e,
+  onAvatarChange,
+}: {
+  e: EmployeeFull;
+  onAvatarChange?: (avatarUrl: string | null) => void;
+}) {
   return (
     <div className="profile-header">
-      {e.avatarUrl ? (
+      {onAvatarChange ? (
+        <AvatarUploader
+          userId={e.id}
+          avatarUrl={e.avatarUrl}
+          firstName={e.firstName}
+          lastName={e.lastName}
+          onChange={onAvatarChange}
+        />
+      ) : e.avatarUrl ? (
         <img src={e.avatarUrl} alt="" className="avatar avatar-large" />
       ) : (
         <span className="avatar avatar-large avatar-fallback">

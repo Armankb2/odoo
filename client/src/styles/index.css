@@ -1568,3 +1568,75 @@ legend {
     display: none;
   }
 }
+
+/* -------------------------------------------------------------
+   17. Inline Field Action (email + Send code)
+------------------------------------------------------------- */
+.field-with-action {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.field-with-action input {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-with-action button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* -------------------------------------------------------------
+   18. Avatar Uploader
+------------------------------------------------------------- */
+.avatar-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.avatar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar-actions button {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  box-shadow: none;
+}
+
+/* A destructive action should not look as inviting as the primary one. */
+.avatar-actions .link-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  text-decoration: underline;
+  padding: 0.4rem 0.25rem;
+  font-weight: 700;
+}
+
+.avatar-actions .link-button:hover {
+  color: var(--status-error-text);
+}
+
+/* Reachable by a screen reader and focusable, but not visible — the file input
+   is triggered by the styled button beside it. `display: none` would take it
+   out of the accessibility tree entirely. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

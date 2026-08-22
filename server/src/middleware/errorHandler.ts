@@ -4,11 +4,44 @@ import { ZodError } from 'zod';
 import { AppError } from '../lib/errors';
 
 /**
+ * Names the field(s) behind a P2002 unique-constraint violation.
+ *
+ * The shape is provider-dependent and this is a real trap: on PostgreSQL
+ * `meta.target` is a string[], but on **MySQL it is a plain string** holding
+ * the index name (e.g. "User_email_key"). Assuming the array shape throws
+ * `target.join is not a function` inside the error handler itself, which makes
+ * Express fall back to its default handler and return an HTML stack trace.
+ */
+function uniqueTargetName(target: unknown): string {
+  if (Array.isArray(target)) return target.join(', ');
+  if (typeof target === 'string') {
+    // "User_email_key" / "User_loginId_key" → "email" / "loginId"
+    const m = /^[A-Za-z]+_(.+)_key$/.exec(target);
+    return m ? m[1] : target;
+  }
+  return 'value';
+}
+
+/**
  * The only place in the codebase that formats an error response.
  * Must be registered last, and must take four arguments or Express will treat
  * it as ordinary middleware and never call it.
+ *
+ * The whole body is wrapped: if the handler itself throws, Express's default
+ * handler takes over and returns an HTML page containing a full stack trace —
+ * paths, line numbers and all — to the client.
  */
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: unknown, _req: Request, res: Response, next: NextFunction) {
+  try {
+    return formatError(err, res);
+  } catch (handlerErr) {
+    console.error('[errorHandler failed]', handlerErr, '\noriginal:', err);
+    if (res.headersSent) return next(err);
+    return res.status(500).json({ error: { code: 'INTERNAL', message: 'Something went wrong' } });
+  }
+}
+
+function formatError(err: unknown, res: Response) {
   if (err instanceof AppError) {
     return res.status(err.status).json({
       error: { code: err.code, message: err.message, details: err.details },
@@ -29,9 +62,8 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   // trace for what is really a user-facing conflict.
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
-      const target = (err.meta?.target as string[] | undefined)?.join(', ') ?? 'value';
       return res.status(409).json({
-        error: { code: 'CONFLICT', message: `That ${target} is already in use` },
+        error: { code: 'CONFLICT', message: `That ${uniqueTargetName(err.meta?.target)} is already in use` },
       });
     }
     if (err.code === 'P2025') {

@@ -1,5 +1,6 @@
 # ─────────────────────────────────────────────────────────────
 # SECRETS AND CREDENTIALS — nothing here may ever reach the remote
+
 # ─────────────────────────────────────────────────────────────
 
 # Environment files. `.env` and `.env.*` match at ANY depth, so server/.env

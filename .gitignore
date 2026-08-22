@@ -1,7 +1,66 @@
+# ─────────────────────────────────────────────────────────────
+# SECRETS AND CREDENTIALS — nothing here may ever reach the remote
+# ─────────────────────────────────────────────────────────────
+
+# Environment files. `.env` and `.env.*` match at ANY depth, so server/.env
+# and client/.env are both covered. The negation must stay last of the three,
+# or the example template gets swallowed by `.env.*`.
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.asc
+*.gpg
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+*.ppk
+
+# Tool credential files that carry auth tokens
+.npmrc
+.yarnrc
+.netrc
+.pgpass
+.my.cnf
+my.cnf
+.aws/
+.ssh/
+gha-creds-*.json
+
+# Generic credential dumps
+credentials.json
+secrets.json
+service-account*.json
+*credentials*.yml
+*credentials*.yaml
+
+# Database dumps and backups — may contain real employee/salary rows.
+# NOTE: plain *.sql is deliberately NOT ignored; Prisma migration files are
+# .sql and must be committed.
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+backup/
+backups/
+
+# ─────────────────────────────────────────────────────────────
 # Claude Code workspace — local to Dhanush's machine, never shared.
 # Agent config, the SessionStart hook, project memory and the session log are
 # personal workflow tooling; they must not reach the remote or affect anyone
 # else working on this repo.
+# ─────────────────────────────────────────────────────────────
 .claude/
 CLAUDE.md
 docs/SESSION_LOG.md
@@ -10,25 +69,45 @@ docs/SESSION_LOG.md
 docs/WIREFRAME_SPEC.md
 *.excalidraw
 
+# ─────────────────────────────────────────────────────────────
 # Dependencies
+# ─────────────────────────────────────────────────────────────
 node_modules/
+.pnp
+.pnp.js
 __pycache__/
 *.py[cod]
 venv/
 .venv/
 
-# Environment / secrets — never commit these
-.env
-.env.*
-!.env.example
-
-# Build output
+# ─────────────────────────────────────────────────────────────
+# Build output and caches
+# ─────────────────────────────────────────────────────────────
 dist/
 build/
+.vite/
+.cache/
+coverage/
+*.tsbuildinfo
 *.log
+npm-debug.log*
+yarn-error.log*
 
+# ─────────────────────────────────────────────────────────────
+# Runtime / generated
+# ─────────────────────────────────────────────────────────────
+# User-uploaded files: avatars, company logos, sick-leave certificates.
+# Real people's documents — never commit these.
+uploads/
+server/src/generated/
+.prisma/
+
+# ─────────────────────────────────────────────────────────────
 # Editor / OS
+# ─────────────────────────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
 .DS_Store
 Thumbs.db
+desktop.ini

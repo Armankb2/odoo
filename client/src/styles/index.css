@@ -417,9 +417,15 @@ button, input, select, textarea {
   font-weight: 600;
 }
 
-/* Distinct Placeholder / Empty Values */
-.field-value:empty::before,
-.field-value:contains("—") {
+/* Distinct Placeholder / Empty Values.
+   `:contains()` is not a CSS selector — it was dropped from the spec
+   and only ever existed in jQuery. An invalid selector invalidates
+   the whole selector list, so this rule did nothing at all. The
+   em-dash placeholders the pages render are plain text and cannot be
+   matched from CSS; what is stylable is a genuinely empty value, so
+   ::before supplies the dash itself. */
+.field-value:empty::before {
+  content: "—";
   color: var(--text-light);
   font-size: 0.85rem;
   font-weight: 400;
@@ -837,6 +843,20 @@ input:focus, select:focus, textarea:focus {
   font-size: 1rem;
   color: var(--text-main);
   flex: 1;
+}
+
+/* Occupies the slot the Check IN / Check Out button leaves behind
+   once the day is complete, so it is sized like that button but
+   reads as a settled state rather than an action. */
+.check-in-done {
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--radius-full);
+  background-color: var(--status-leave-bg);
+  color: var(--status-leave-text);
+  border: 1px solid var(--status-leave-border);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .month-nav, .day-nav {
@@ -1294,4 +1314,77 @@ legend {
   display: flex;
   gap: 0.85rem;
   align-items: center;
+}
+
+/* -------------------------------------------------------------
+   15. Salary Panel
+   Lives inside .tab-panel, so it is a single flex item there and
+   has to lay its own children out. Headings still pick up the
+   .tab-panel h3 rule by descent.
+------------------------------------------------------------- */
+.salary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.salary-summary {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1.85rem;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem 1.85rem;
+  align-items: start;
+}
+
+/* The grid supplies the rhythm; the stacked default would double it. */
+.salary-summary .field {
+  margin-bottom: 0;
+}
+
+/* Admin sees an editable wage + Save button where employees see a
+   read-only field. Give it the whole first row so the control does
+   not get squeezed into a 220px column. */
+.salary-summary .form-row {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+/* Two- and three-column tables stretched to full width read as
+   mostly whitespace; bound them and let the wide one breathe. */
+.pf-table,
+.deductions-table {
+  max-width: 32rem;
+}
+
+/* `table th` is uppercase micro-type, which is right for column
+   headers but unreadable for these row labels, which carry the
+   actual content. */
+.pf-table tbody th[scope='row'],
+.deductions-table tbody th[scope='row'],
+.salary-components tfoot th[scope='row'] {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-main);
+  text-align: left;
+}
+
+/* Component total and net monthly are the figures people look for. */
+.salary-components tfoot td,
+.salary-components tfoot th {
+  font-weight: 800;
+  color: var(--text-main);
+  border-top: 2px solid var(--border);
+}
+
+.deductions-table tbody tr:last-child th[scope='row'],
+.deductions-table tbody tr:last-child td {
+  font-weight: 800;
+  color: var(--primary);
+  border-top: 2px solid var(--border);
 }

@@ -24,8 +24,8 @@ Employees can **view** their own salary but never change it: reads allow the
 own record, writes are admin-only, and salary appears in neither profile edit
 allow-list.
 
-**Stack:** React (Vite) + Node (Express) + MySQL 8, with Prisma, TanStack
-Query, React Hook Form and Tailwind/shadcn.
+**Stack:** React 19 (Vite) + Node (Express 5) + MySQL 8, with Prisma, React
+Router 7 and plain hand-written CSS. TypeScript on both sides.
 
 ## Running it
 
@@ -64,9 +64,15 @@ development and there is no CORS to configure.
 
 ## Styling
 
-**The React app ships deliberately unstyled** — no CSS file, no colours, no
-layout rules. Structure and behaviour are complete; the visual design is a
-separate piece of work.
+The markup and the stylesheet were built by two people, and they meet through
+hooks rather than through edits to each other. Every screen shipped first as
+semantic, completely unstyled markup; `client/src/styles/index.css` was then
+written against it and imported once from `client/src/main.tsx` — **without
+changing a single component**.
+
+Keep that split. Style through the hooks below; if a screen needs new visual
+state, add another hook rather than an inline style. No Tailwind, no component
+library.
 
 Every element carries a semantic `className`, and state that matters visually
 is exposed as a data attribute rather than baked in:
@@ -77,25 +83,47 @@ is exposed as a data attribute rather than baked in:
 - `data-status="PENDING|APPROVED|REJECTED"` on leave rows
 - `data-missing-checkout` on attendance rows where someone forgot to check out
 
-To add styles, drop a stylesheet in and import it from `client/src/main.tsx`
-(or link it in `client/index.html`) — both carry a comment marking the spot.
+Some hooks are interpolated from API values — `employee-status-${status}`,
+`status-dot-${state}` — so the casing of the `CardStatus` and `LeaveStatus`
+enums is load-bearing. Change either and the styling disappears silently, with
+no build error.
 
 ## What's here
 
 ```
 .
-├── README.md              # You are here
+├── README.md                  # You are here
+├── client/                    # React 19 + Vite + React Router 7
+│   └── src/
+│       ├── pages/             # One file per screen
+│       ├── components/        # AppShell, ProfileTabs, SalaryPanel, ...
+│       ├── hooks/             # useAuth, useAsync
+│       ├── lib/               # api.ts (thin fetch wrapper), format.ts
+│       └── styles/index.css   # The whole stylesheet — see "Styling" above
+├── server/                    # Express 5 + Prisma
+│   ├── src/
+│   │   ├── routes/            # HTTP layer
+│   │   ├── services/          # Business logic, incl. the salary engine
+│   │   ├── policies/          # Row- and field-level access rules
+│   │   ├── middleware/        # Auth, role guards, error handling
+│   │   └── lib/
+│   └── prisma/                # schema.prisma, migrations, seed.ts
+├── Architecture/
+│   ├── ANALYSIS.md            # Both sources reconciled — read this first
+│   ├── TASKS.md               # Task list and status
+│   ├── architect.md           # System design
+│   ├── README_DATABASE.md     # Schema and the derived-not-stored rule
+│   ├── README_BACKEND.md      # API surface and the RBAC layers
+│   ├── README_FRONTEND.md     # Screens and the styling hook contract
+│   └── Dayflow_HRMS_Tech_Stack.docx
 └── docs/
-    ├── ANALYSIS.md            # Both sources reconciled — read this first
-    ├── WIREFRAME_SPEC.md      # Screens, fields and rules from the wireframe
-    ├── TECH_STACK.md          # Stack and the reasoning behind it
     ├── PROBLEM_STATEMENT.md   # The original PDF brief, extracted
+    ├── WIREFRAME_SPEC.md      # Screens, fields and rules from the wireframe
     ├── Dayflow - ... .pdf     # Original requirements document
-    ├── ... - 8 hours.excalidraw  # Original wireframes
-    └── TASKS.md               # Task list and status
+    └── ... - 8 hours.excalidraw  # Original wireframes
 ```
 
-Read `docs/ANALYSIS.md` first. There are two requirement sources and they
+Read `Architecture/ANALYSIS.md` first. There are two requirement sources and they
 **contradict each other** on registration, attendance, leave balances and
 payroll — the wireframe is the authoritative one.
 

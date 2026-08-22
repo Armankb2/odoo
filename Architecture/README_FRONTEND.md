@@ -1,10 +1,25 @@
 # Dayflow HRMS — Frontend Architecture
 
+> ⚠️ **This is the pre-build design document, and the build diverged from it.**
+> Three of its load-bearing choices were dropped and are *not* in the codebase:
+> **TanStack Query**, **Tailwind**, and **shadcn/ui**. Anything below about
+> query keys, `ui/` generated components, Tailwind theming or the
+> wireframe-to-shadcn inventory describes a frontend that was never built.
+>
+> **What actually shipped:** Vite + React 19 + React Router 7 + TypeScript, a
+> thin `lib/api.ts` `fetch` wrapper with a `useAsync` hook in place of TanStack
+> Query, and ~1300 lines of plain hand-written CSS in
+> `client/src/styles/index.css`. The routing, screen inventory, role-gating and
+> data-shape sections below are still accurate. See the **Styling** section of
+> the root `README.md` for the class/data-attribute hook contract that the
+> markup and the stylesheet meet through.
+
 Vite + React 19 + React Router v7 + TanStack Query + React Hook Form +
 Tailwind + shadcn/ui.
 
-TypeScript is assumed. **If plain JavaScript is chosen instead, drop the type
-annotations — every structural decision below is unchanged.**
+TypeScript was chosen (see the banner above); the original note read: *if plain
+JavaScript is chosen instead, drop the type annotations — every structural
+decision below is unchanged.*
 
 ---
 

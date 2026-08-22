@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, type CurrentUser } from '../lib/api';
+import { api, type CurrentUser, type Role } from '../lib/api';
 
 interface AuthValue {
   user: CurrentUser | null;
   loading: boolean;
-  signIn: (identifier: string, password: string) => Promise<void>;
+  signIn: (identifier: string, password: string, role: Role) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const signIn = useCallback(
-    async (identifier: string, password: string) => {
-      await api.post('/api/auth/login', { identifier, password });
+    async (identifier: string, password: string, role: Role) => {
+      await api.post('/api/auth/login', { identifier, password, role });
       await refresh();
     },
     [refresh],

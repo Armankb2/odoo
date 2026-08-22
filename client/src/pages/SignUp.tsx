@@ -2,31 +2,34 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { homeFor } from '../components/ProtectedRoute';
+import type { Role } from '../lib/api';
 
 /**
- * Company registration — NOT employee self-service.
+ * Sign-up for the single Dayflow company.
  *
- * Per the wireframe: "Normal user cannot register." This creates the company
- * and its first admin. Every other account is created by that admin from the
- * Employees screen.
+ * No company name or code is asked for — there is only one company and its
+ * details are fixed server-side. The caller picks their own role; the server
+ * takes that at face value, so anyone signing up can become an Admin.
  */
 export function SignUp() {
   const { refresh } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    companyName: '',
-    companyCode: '',
     name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
+    role: 'EMPLOYEE' as Role,
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -38,9 +41,9 @@ export function SignUp() {
     setError(null);
     try {
       const { confirmPassword, ...payload } = form;
-      await api.post('/api/auth/signup', { ...payload, companyCode: payload.companyCode.toUpperCase() });
+      await api.post('/api/auth/signup', payload);
       await refresh();
-      navigate('/employees', { replace: true });
+      navigate(homeFor(form.role), { replace: true });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -53,21 +56,11 @@ export function SignUp() {
       <form className="auth-form" onSubmit={onSubmit}>
         <h1>Sign Up</h1>
 
-        <label htmlFor="companyName">Company Name</label>
-        <input id="companyName" required value={form.companyName} onChange={set('companyName')} />
-
-        <label htmlFor="companyCode">Company Code</label>
-        {/* Two letters — becomes the Login ID prefix, e.g. OI in OIJODO20220001. */}
-        <input
-          id="companyCode"
-          required
-          maxLength={2}
-          minLength={2}
-          pattern="[A-Za-z]{2}"
-          title="Exactly two letters"
-          value={form.companyCode}
-          onChange={set('companyCode')}
-        />
+        <label htmlFor="role">I am signing up as</label>
+        <select id="role" name="role" required value={form.role} onChange={set('role')}>
+          <option value="EMPLOYEE">Employee</option>
+          <option value="ADMIN">Admin / HR</option>
+        </select>
 
         <label htmlFor="name">Name</label>
         <input id="name" required value={form.name} onChange={set('name')} />

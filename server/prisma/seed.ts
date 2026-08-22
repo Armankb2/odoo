@@ -13,8 +13,17 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const COMPANY_CODE = 'OI';
+// Single company. These must stay in step with server/src/lib/company.ts —
+// the running app upserts on that code, so a mismatch would create a second
+// company row and orphan every seeded Login ID.
+const COMPANY_NAME = 'Dayflow';
+const COMPANY_CODE = 'DF';
 const DEMO_PASSWORD = 'password123';
+
+/** The fixed admin, so there is always one known way in regardless of what
+ *  the demo people list changes to. */
+const ADMIN_EMAIL = 'admin@dayflow.local';
+const ADMIN_PASSWORD = 'Admin@12345';
 
 function namePart(name: string) {
   return name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2).padEnd(2, 'X');
@@ -75,7 +84,7 @@ async function main() {
 
   console.log('Creating company…');
   const company = await prisma.company.create({
-    data: { name: 'Odoo India', code: COMPANY_CODE },
+    data: { name: COMPANY_NAME, code: COMPANY_CODE },
   });
 
   const leaveTypes = await Promise.all([
@@ -100,7 +109,7 @@ async function main() {
       data: {
         companyId: company.id,
         loginId: loginIdFor(p.first, p.last, p.year, serial),
-        email: `${p.first.toLowerCase()}.${p.last.toLowerCase()}@odooindia.test`,
+        email: `${p.first.toLowerCase()}.${p.last.toLowerCase()}@dayflow.test`,
         passwordHash,
         role: p.role,
         // Demo accounts are ready to sign in; only HR-created ones carry the flag.
@@ -119,7 +128,7 @@ async function main() {
         residingAddress: `${serial} MG Road, Bengaluru, Karnataka`,
         bankName: 'HDFC Bank',
         ifscCode: 'HDFC0001234',
-        about: `${p.position} at Odoo India.`,
+        about: `${p.position} at ${COMPANY_NAME}.`,
         salaryStructure: {
           create: {
             monthlyWage: p.wage,
@@ -132,6 +141,32 @@ async function main() {
     });
     users.push(user);
   }
+
+  // The fixed admin. Kept out of `users` deliberately: it is a way in, not a
+  // demo person, so it gets no attendance, no leave and no salary structure
+  // cluttering the demo data.
+  const adminYear = new Date().getUTCFullYear();
+  const adminSerial = (serialByYear.get(adminYear) ?? 0) + 1;
+  serialByYear.set(adminYear, adminSerial);
+
+  const fixedAdmin = await prisma.user.create({
+    data: {
+      companyId: company.id,
+      loginId: loginIdFor('System', 'Admin', adminYear, adminSerial),
+      email: ADMIN_EMAIL,
+      passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 10),
+      role: 'ADMIN',
+      mustChangePassword: false,
+      firstName: 'System',
+      lastName: 'Admin',
+      jobPosition: 'Administrator',
+      department: 'Human Resources',
+      location: 'Bengaluru',
+      dateOfJoining: new Date(Date.UTC(adminYear, 0, 1)),
+      joiningYear: adminYear,
+      joiningSerial: adminSerial,
+    },
+  });
 
   // Keep the sequence table consistent with what we inserted, so the first
   // employee created through the API doesn't collide with a seeded serial.
@@ -222,10 +257,19 @@ async function main() {
 
   console.log('\nSeed complete.');
   console.log(`  Company     : ${company.name} (${company.code})`);
-  console.log(`  Users       : ${users.length}`);
+  console.log(`  Users       : ${users.length + 1}`);
   console.log(`  Attendance  : ${attendanceRows.length} rows`);
-  console.log(`  Admin login : ${users[0].loginId}  /  ${DEMO_PASSWORD}`);
-  console.log(`  Employee    : ${users[1].loginId}  /  ${DEMO_PASSWORD}`);
+  console.log('');
+  console.log('  +---------------------------------------------------------+');
+  console.log('  |  HARDCODED ADMIN  --  sign in with role "Admin / HR"     |');
+  console.log('  +---------------------------------------------------------+');
+  console.log(`  |  Login ID : ${fixedAdmin.loginId.padEnd(42)}|`);
+  console.log(`  |  Email    : ${ADMIN_EMAIL.padEnd(42)}|`);
+  console.log(`  |  Password : ${ADMIN_PASSWORD.padEnd(42)}|`);
+  console.log('  +---------------------------------------------------------+');
+  console.log('');
+  console.log(`  Other admin   : ${users[0].loginId}  /  ${DEMO_PASSWORD}`);
+  console.log(`  Demo employee : ${users[1].loginId}  /  ${DEMO_PASSWORD}   (role "Employee")`);
 }
 
 main()

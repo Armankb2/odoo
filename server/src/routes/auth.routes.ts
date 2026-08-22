@@ -3,29 +3,32 @@ import { z } from 'zod';
 import { validateBody } from '../middleware/validate';
 import { requireAuth } from '../middleware/requireAuth';
 import { COOKIE_NAME, cookieOptions, signToken } from '../lib/jwt';
-import { changePassword, signIn, signUpCompany } from '../services/auth.service';
+import { changePassword, signIn, signUp } from '../services/auth.service';
 import { prisma } from '../lib/prisma';
 import { unauthenticated } from '../lib/errors';
 
 export const authRouter = Router();
 
+// Dayflow is a single company, so sign-up asks for a person, not an
+// organisation. `role` is the caller's own choice — see the warning on
+// `signUp()` about what that means.
 const signUpSchema = z.object({
-  companyName: z.string().min(2).max(150),
-  companyCode: z.string().length(2),
   name: z.string().min(2).max(120),
   email: z.string().email(),
   phone: z.string().max(20).optional(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  role: z.enum(['ADMIN', 'EMPLOYEE'], {
+    errorMap: () => ({ message: 'Choose Admin or Employee' }),
+  }),
 });
 
 authRouter.post('/signup', validateBody(signUpSchema), async (req, res, next) => {
   try {
-    const { company, admin } = await signUpCompany(req.body);
-    const token = signToken({ sub: admin.id, companyId: company.id, role: admin.role });
+    const { company, user } = await signUp(req.body);
+    const token = signToken({ sub: user.id, companyId: company.id, role: user.role });
     res.cookie(COOKIE_NAME, token, cookieOptions());
     res.status(201).json({
-      company: { id: company.id, name: company.name, code: company.code },
-      user: { id: admin.id, loginId: admin.loginId, email: admin.email, role: admin.role },
+      user: { id: user.id, loginId: user.loginId, email: user.email, role: user.role },
     });
   } catch (err) {
     next(err);
@@ -35,11 +38,15 @@ authRouter.post('/signup', validateBody(signUpSchema), async (req, res, next) =>
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Login ID or email is required'),
   password: z.string().min(1, 'Password is required'),
+  // Verified against the account, never trusted as a grant of authority.
+  role: z.enum(['ADMIN', 'EMPLOYEE'], {
+    errorMap: () => ({ message: 'Choose Admin or Employee' }),
+  }),
 });
 
 authRouter.post('/login', validateBody(loginSchema), async (req, res, next) => {
   try {
-    const user = await signIn(req.body.identifier, req.body.password);
+    const user = await signIn(req.body.identifier, req.body.password, req.body.role);
     const token = signToken({ sub: user.id, companyId: user.companyId, role: user.role });
     res.cookie(COOKIE_NAME, token, cookieOptions());
     res.json({

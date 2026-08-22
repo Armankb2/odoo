@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
 import { AppShell } from './components/AppShell';
-import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute, ProtectedRoute, homeFor } from './components/ProtectedRoute';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 import { ChangePassword } from './pages/ChangePassword';
@@ -11,6 +12,12 @@ import { EditEmployee } from './pages/EditEmployee';
 import { Profile } from './pages/Profile';
 import { Attendance } from './pages/Attendance';
 import { TimeOff } from './pages/TimeOff';
+
+/** Sends each role to a page it is actually allowed to open. */
+function Home() {
+  const { user } = useAuth();
+  return <Navigate to={homeFor(user?.role)} replace />;
+}
 
 export function App() {
   return (
@@ -33,10 +40,17 @@ export function App() {
           </ProtectedRoute>
         }
       >
-        {/* The wireframe's "after login the user must land on this page" is the
-            employee list, not a card dashboard. */}
-        <Route index element={<Navigate to="/employees" replace />} />
-        <Route path="/employees" element={<Employees />} />
+        <Route index element={<Home />} />
+        {/* Admin-only: PROBLEM_STATEMENT.md §3.2.2 puts the employee list on the
+            Admin / HR dashboard, and §2 gives an employee no directory at all. */}
+        <Route
+          path="/employees"
+          element={
+            <AdminRoute>
+              <Employees />
+            </AdminRoute>
+          }
+        />
         <Route
           path="/employees/new"
           element={
@@ -59,7 +73,7 @@ export function App() {
         <Route path="/time-off" element={<TimeOff />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/employees" replace />} />
+      <Route path="*" element={<Home />} />
     </Routes>
   );
 }

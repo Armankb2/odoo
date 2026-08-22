@@ -55,3 +55,16 @@ export const todayKey = () => new Date().toISOString().slice(0, 10);
  *  These map to the wireframe's 🟢 present / ✈️ on leave / 🟡 absent. */
 export const statusLabel = (s: 'present' | 'leave' | 'absent') =>
   s === 'present' ? 'Present' : s === 'leave' ? 'On leave' : 'Absent';
+
+/** Legend and cell labels for the attendance calendar. Text only — the colour
+ *  is the stylesheet's job, driven by the same status value. */
+export const dayStatusLabel = (s: 'present' | 'absent' | 'timeoff' | 'off' | 'future') =>
+  s === 'present'
+    ? 'Present'
+    : s === 'absent'
+      ? 'Absent'
+      : s === 'timeoff'
+        ? 'Time off'
+        : s === 'off'
+          ? 'Week off'
+          : 'Upcoming';

@@ -17,9 +17,22 @@ export const employeeRouter = Router();
 
 employeeRouter.use(requireAuth, requirePasswordChanged);
 
-/** Both roles may list — the wireframe shows the employee list as the landing
- *  page for everyone. Scoped to the caller's company. */
-employeeRouter.get('/', async (req, res, next) => {
+/**
+ * Admin only.
+ *
+ * This was open to both roles, on the strength of the wireframe showing the
+ * employee list as everyone's landing page. That was a bug: it let any
+ * employee enumerate every colleague's name, Login ID, email, job title and
+ * department. The requirements are explicit the other way —
+ * `docs/PROBLEM_STATEMENT.md` §3.2.2 lists the employee list under the
+ * **Admin / HR** dashboard, and §2 gives an Employee only "personal profile,
+ * attendance, applies for leave, views salary details".
+ *
+ * `GET /:id` below stays open to both roles because `assertCanAccessUser`
+ * narrows it to the caller's own record; a *list* has no such narrowing, so it
+ * needs the route-level gate.
+ */
+employeeRouter.get('/', requireRole('ADMIN'), async (req, res, next) => {
   try {
     const search = String(req.query.search ?? '').trim();
     const employees = await prisma.user.findMany({

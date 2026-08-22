@@ -1,0 +1,30 @@
+# Claude Code workspace — local to Dhanush's machine, never shared.
+# Agent config, the SessionStart hook, project memory and the session log are
+# personal workflow tooling; they must not reach the remote or affect anyone
+# else working on this repo.
+.claude/
+CLAUDE.md
+docs/SESSION_LOG.md
+
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Environment / secrets — never commit these
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

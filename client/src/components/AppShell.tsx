@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { homeFor } from './ProtectedRoute';
 
 /**
- * Persistent chrome from the wireframe:
- *   Company Logo | Employees | Attendance | Time Off        [avatar ▾]
- * with the avatar opening My Profile / Log Out.
+ * Persistent chrome:
+ *   Logo | [Employees] | My Profile | Attendance | Time Off   [avatar ▾]
+ *
+ * Employees is admin-only, so an employee sees the nav without it.
  */
 export function AppShell() {
   const { user, signOut } = useAuth();
@@ -22,7 +24,7 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <header className="top-nav">
-        <Link to="/employees" className="brand">
+        <Link to={homeFor(user.role)} className="brand">
           {user.company.logoUrl ? (
             <img src={user.company.logoUrl} alt={user.company.name} className="company-logo" />
           ) : (
@@ -32,7 +34,10 @@ export function AppShell() {
         </Link>
 
         <nav className="main-nav">
-          <NavLink to="/employees">Employees</NavLink>
+          {/* Admin-only. The server refuses the list for an employee anyway;
+              hiding the link stops them walking into a 403. */}
+          {user.role === 'ADMIN' && <NavLink to="/employees">Employees</NavLink>}
+          <NavLink to="/profile">My Profile</NavLink>
           <NavLink to="/attendance">Attendance</NavLink>
           <NavLink to="/time-off">Time Off</NavLink>
         </nav>

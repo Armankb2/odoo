@@ -5,12 +5,19 @@ import { forbidden } from '../lib/errors';
  * Field-level access control.
  *
  * Route-level roles answer "may you call this endpoint"; this answers "which
- * fields may you see and change once you are in". Both requirement sources
- * demand the distinction:
+ * fields may you see and change once you are in". The spec demands the
+ * distinction:
  *
- *   - "Employees can edit limited fields (address, phone, profile picture).
- *      Admin can edit all employee details."   (PDF §3.3.2)
- *   - "Salary Info tab should only be visible to Admin."   (wireframe)
+ *   - "Employees edit limited fields (address, phone, profile picture). Admin
+ *      can edit all employee details."   (PDF §3.3.2)
+ *   - "Payroll data is read-only for employees."   (PDF §3.6.1)
+ *
+ * Note on salary: an employee CAN read their own salary — PDF §2 lists "views
+ * salary details" among an employee's abilities and §3.6.1 makes it read-only
+ * rather than hidden. `canViewSalary` below implements exactly that. This
+ * comment used to cite a wireframe line, "Salary Info tab should only be
+ * visible to Admin", which reads as admin-only and contradicts the PDF; the
+ * wireframe has since been deleted and the PDF governs.
  *
  * The rule that matters: this is applied server-side, to an allow-list. Never
  * trust the set of fields the client chose to send, and never rely on the UI

@@ -37,7 +37,7 @@ cd server
 npm install
 cp .env.example .env        # then set DATABASE_URL and JWT_SECRET
 npm run db:migrate          # create the schema
-npm run db:seed             # demo company, 8 users, attendance, leave
+npm run db:seed             # company config, 9 users, attendance, leave
 npm run dev                 # http://localhost:4000
 
 # 2 — web app
@@ -51,12 +51,38 @@ development and there is no CORS to configure.
 
 `npm run db:studio` (in `server/`) opens a browsable view of the database.
 
-**Demo logins** — both with password `password123`:
+### Signing in
+
+Dayflow is a **single company**, so there is nothing to register an
+organisation for — sign-up asks for a person and the role they want, and
+sign-in asks which role you are signing in as. The role on the sign-in form is
+checked against the account, not trusted: pick the wrong one and you get a
+clear error rather than a half-working session.
+
+**The hardcoded admin**, created by `db:seed`:
+
+| Field | Value |
+|---|---|
+| Role | **Admin / HR** |
+| Login ID | `DFSYAD20260001` |
+| Email | `admin@dayflow.local` |
+| Password | `Admin@12345` |
+
+Either the Login ID or the email works. The `2026` in that Login ID is the
+year you seeded in, so it will differ on a later run — `db:seed` prints the
+exact value it created, and the email and password never change.
+
+Two more demo accounts, both with password `password123`:
 
 | Login ID | Role |
 |---|---|
-| `OIDHMO20220001` | Admin / HR |
-| `OIARKH20220002` | Employee |
+| `DFDHMO20220001` | Admin / HR |
+| `DFARKH20220002` | Employee |
+
+> ⚠️ **Sign-up lets the caller choose ADMIN**, which means anyone who can reach
+> the page can grant themselves full access to every employee record and
+> salary. That is deliberate for the demo. Gate it behind an invite code, or
+> drop `ADMIN` from the accepted values, before this faces anything real.
 
 > **If the password contains `#`** (or any of `#?@/:`), percent-encode it in
 > `DATABASE_URL` — `#` starts a URL fragment and silently truncates the rest.
@@ -117,21 +143,55 @@ no build error.
 │   ├── README_FRONTEND.md     # Screens and the styling hook contract
 │   └── Dayflow_HRMS_Tech_Stack.docx
 └── docs/
-    ├── PROBLEM_STATEMENT.md   # The original PDF brief, extracted
-    ├── WIREFRAME_SPEC.md      # Screens, fields and rules from the wireframe
-    ├── Dayflow - ... .pdf     # Original requirements document
-    └── ... - 8 hours.excalidraw  # Original wireframes
+    ├── Dayflow - ... .pdf     # The requirements document — the spec
+    └── PROBLEM_STATEMENT.md   # That PDF, extracted to text
 ```
 
-Read `Architecture/ANALYSIS.md` first. There are two requirement sources and they
-**contradict each other** on registration, attendance, leave balances and
-payroll — the wireframe is the authoritative one.
+**`docs/Dayflow - Human Resource Management System.pdf`** is the specification;
+`docs/PROBLEM_STATEMENT.md` is its extracted text. An Excalidraw wireframe used
+to sit alongside it and was treated as authoritative where the two disagreed —
+it has since been deleted, so the PDF stands alone. Code comments that justify
+behaviour with "the wireframe shows…" predate that and should be checked
+against the PDF rather than trusted.
+
+## Who sees what
+
+Per PDF §2 and §3.2.2, an employee has **no directory**: they see their own
+profile, their own attendance, their own leave and their own salary. The
+employee list, the company-wide attendance day view and every write to another
+person's record are Admin / HR only.
+
+This is enforced on the server — `GET /api/employees` is role-gated and
+per-record reads go through `assertCanAccessUser` — and mirrored in the UI so
+an employee is never shown a link to a 403.
+
+## Attendance
+
+Employees get a **month calendar**, coloured per day:
+
+| Colour | Meaning |
+|---|---|
+| 🟩 Green | Present — an attendance row exists for that day |
+| 🟥 Red | Absent — a working day with no attendance and no approved leave |
+| 🟨 Yellow | Time off — covered by an approved leave request |
+| ⬜ Grey | Week off — always Sunday, plus Saturday on a five-day week |
+| ▫️ Blank | Later than today, so nothing has happened yet |
+
+Precedence runs top to bottom with two deliberate exceptions: an attendance row
+wins over everything, so a Sunday someone actually worked reads green; and a
+non-working day beats leave, so a leave request spanning a weekend does not
+paint the Sunday yellow. The status is computed server-side and handed to the
+stylesheet as `data-status` — the colours are defined once, in
+`client/src/styles/index.css` §16.
+
+Admins keep the whole-company day view instead, and can open any employee's
+month calendar from their record.
 
 ## Features (from the spec)
 
 | Area | Employee | Admin / HR |
 |---|---|---|
-| Auth | Sign up with Employee ID, email, password, role; email verification | same |
+| Auth | Sign up with name, email, password and role; sign in as Employee | same, signing in as Admin / HR |
 | Dashboard | Profile, attendance, leave request cards; recent activity | Employee list, attendance records, leave approvals |
 | Profile | View all; edit address, phone, picture | View and edit all employee details |
 | Attendance | Check-in / check-out; own daily & weekly view | All employees' records |

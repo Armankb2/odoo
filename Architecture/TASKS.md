@@ -3,6 +3,12 @@
 Status: `todo` → `in-progress` → `done`. One branch per task; never commit to
 `main` directly.
 
+> **Source of truth (2026-08-22):** the Excalidraw wireframe and
+> `docs/WIREFRAME_SPEC.md` were deleted. **`docs/Dayflow - Human Resource
+> Management System.pdf`** (extracted to `docs/PROBLEM_STATEMENT.md`) is the
+> base specification. Code comments that justify behaviour with "the wireframe
+> shows…" are stale — one of them was hiding the bug fixed in task 19.
+
 | # | Task | Branch | Status |
 |---|------|--------|--------|
 | 1 | Repo scaffolding: README, requirements docs, task list | `chore/project-isolation-setup` | done |
@@ -23,6 +29,9 @@ Status: `todo` → `in-progress` → `done`. One branch per task; never commit t
 | 15 | Frontend: React app, all screens, **unstyled** | `feat-attendance-and-timeoff` | done |
 | 16 | CSS / visual design | `feature-client-styling` | done |
 | 17 | Style the hooks the stylesheet had missed | `chore/post-styling-cleanup` | done |
+| 18 | Single company; role chosen at sign-up and sign-in; fixed admin | `feat-single-company-auth` | done |
+| 19 | Fix: employees could list every colleague (admin-only now) | `fix-employee-scope-and-calendar` | done |
+| 20 | Employee attendance as a colour-coded month calendar | `fix-employee-scope-and-calendar` | done |
 
 "done (API)" means the backend endpoint exists and is tested.
 
@@ -54,7 +63,14 @@ Tailwind, no shadcn/ui, no component library**, which supersedes the
 Tailwind + shadcn call in `Dayflow_HRMS_Tech_Stack.docx`. TanStack Query was
 dropped too; a thin `lib/api.ts` plus a `useAsync` hook covers the screen count.
 
-Three assumptions are shipped but never formally confirmed, and are the first
-things to revisit if the brief is re-read: payslip documents are out of scope
-(the app reports a payable-day count instead), Admin and HR are one combined
-`ADMIN` role, and the app assumes a single company throughout.
+Two of the three long-standing assumptions are now settled decisions rather
+than guesses (task 18): **Admin and HR are one combined `ADMIN` role**, and
+**Dayflow is a single company** — sign-up no longer asks for a company name or
+code, and the `Company` row is the app's configuration record (PF rates,
+professional tax, working days) rather than a tenant. Only one assumption is
+still open: payslip documents are out of scope, and the app reports a
+payable-day count instead.
+
+⚠️ Task 18 also made **role a self-service choice at sign-up**, so anyone
+reaching the sign-up page can become an Admin. Deliberate for the demo, and the
+first thing to close before this is exposed to anyone real.

@@ -88,6 +88,22 @@ export interface EmployeeCard {
   status: CardStatus;
 }
 
+/** One cell of the employee attendance calendar. `status` is the only thing
+ *  that decides the colour; the stylesheet hooks onto it. */
+export type DayStatus = 'present' | 'absent' | 'timeoff' | 'off' | 'future';
+
+export interface AttendanceDay {
+  date: string;
+  day: number;
+  /** 0 = Sunday … 6 = Saturday, in UTC, matching the server's date columns. */
+  weekday: number;
+  status: DayStatus;
+  checkIn: string | null;
+  checkOut: string | null;
+  workHours: string | null;
+  missingCheckOut: boolean;
+}
+
 export interface AttendanceRecord {
   date: string;
   checkIn: string | null;

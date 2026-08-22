@@ -46,7 +46,8 @@ attendanceRouter.post('/check-out', async (req, res, next) => {
   }
 });
 
-/** Employee's own month — the default view per the wireframe. */
+/** Employee's own month, as the calendar grid. PDF §3.4.2: "employees see
+ *  only their own attendance; Admin/HR see all employees." */
 attendanceRouter.get('/me', async (req, res, next) => {
   try {
     const month = monthSchema.parse(req.query.month) ?? currentMonthKey();
@@ -82,7 +83,8 @@ attendanceRouter.get('/', requireRole('ADMIN'), async (req, res, next) => {
   }
 });
 
-/** Payable-day computation — the basis the wireframe says payslips would use. */
+/** Payable-day computation. PDF §3.6 treats attendance as the basis for
+ *  payroll; no payslip document is produced, which stays out of scope. */
 attendanceRouter.get('/payable/:id', async (req, res, next) => {
   try {
     const id = Number(req.params.id);

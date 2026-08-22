@@ -6,6 +6,7 @@ import {
   countWorkingDays,
   dateOnly,
   formatHhMm,
+  isWorkingDay,
   monthRange,
   toDateKey,
   today,
@@ -113,8 +114,45 @@ function decorate(
 }
 
 /**
- * An employee's own month, plus the three summary tiles the wireframe shows:
- * days present, leaves count, total working days.
+ * The colour of one calendar cell.
+ *
+ *   present  green   an attendance row exists for the day
+ *   absent   red     a working day with neither attendance nor approved leave
+ *   timeoff  yellow  covered by an APPROVED leave request
+ *   off      grey    not a working day — always Sunday, plus Saturday on a
+ *                    five-day week
+ *   future   blank   later than today; nothing has happened yet, and painting
+ *                    it red would report the rest of the month as absence
+ */
+export type DayStatus = 'present' | 'absent' | 'timeoff' | 'off' | 'future';
+
+/** Every date key an approved leave request covers, clipped to the month. */
+function leaveDayKeys(
+  leaves: { startDate: Date; endDate: Date }[],
+  start: Date,
+  endExclusive: Date,
+): Set<string> {
+  const keys = new Set<string>();
+  for (const l of leaves) {
+    const cursor = new Date(Math.max(dateOnly(l.startDate).getTime(), start.getTime()));
+    const last = dateOnly(l.endDate);
+    while (cursor <= last && cursor < endExclusive) {
+      keys.add(toDateKey(cursor));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+  }
+  return keys;
+}
+
+/**
+ * An employee's own month: the three summary tiles, the row detail, and one
+ * entry per calendar day for the month grid.
+ *
+ * Precedence is deliberate. An attendance row wins over everything below it,
+ * because if someone actually checked in that day, saying so is the truthful
+ * thing to do even on a Sunday. A non-working day then beats leave, so a leave
+ * request spanning a weekend does not paint the Sunday yellow — the
+ * requirement is that Sunday reads grey.
  */
 export async function myMonth(userId: number, month: string) {
   const { start, end } = monthRange(month);
@@ -127,15 +165,58 @@ export async function myMonth(userId: number, month: string) {
     }),
     prisma.leaveRequest.findMany({
       where: { userId, status: 'APPROVED', startDate: { lt: end }, endDate: { gte: start } },
-      select: { days: true },
+      select: { days: true, startDate: true, endDate: true },
     }),
   ]);
 
   const leavesCount = approvedLeave.reduce((sum, l) => sum + Number(l.days), 0);
 
+  const records = decorate(rows, s);
+  const byDate = new Map(records.map((r) => [r.date, r]));
+  const onLeave = leaveDayKeys(approvedLeave, start, end);
+  const todayKey = toDateKey(today());
+
+  const days: {
+    date: string;
+    day: number;
+    weekday: number;
+    status: DayStatus;
+    checkIn: Date | null;
+    checkOut: Date | null;
+    workHours: string | null;
+    missingCheckOut: boolean;
+  }[] = [];
+
+  const cursor = new Date(start);
+  while (cursor < end) {
+    const key = toDateKey(cursor);
+    const record = byDate.get(key);
+
+    let status: DayStatus;
+    if (record) status = 'present';
+    else if (!isWorkingDay(cursor, s.workingDaysPerWeek)) status = 'off';
+    else if (onLeave.has(key)) status = 'timeoff';
+    else if (key > todayKey) status = 'future';
+    else status = 'absent';
+
+    days.push({
+      date: key,
+      day: cursor.getUTCDate(),
+      weekday: cursor.getUTCDay(),
+      status,
+      checkIn: record?.checkIn ?? null,
+      checkOut: record?.checkOut ?? null,
+      workHours: record?.workHours ?? null,
+      missingCheckOut: record?.missingCheckOut ?? false,
+    });
+
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
   return {
     month,
-    records: decorate(rows, s),
+    records,
+    days,
     summary: {
       daysPresent: rows.length,
       leavesCount,

@@ -1388,3 +1388,183 @@ legend {
   color: var(--primary);
   border-top: 2px solid var(--border);
 }
+
+/* -------------------------------------------------------------
+   16. Attendance Calendar
+   The employee's month view. Every colour is driven by
+   `data-status` on the cell — the same value the server computed —
+   so the palette lives here and nowhere else.
+------------------------------------------------------------- */
+:root {
+  /* Present reuses the existing green and time off the existing amber, so the
+     calendar agrees with the status pills elsewhere. Absent needs the error
+     red: it is the one state the pills never had to show. */
+  --day-present-bg: var(--status-present-bg);
+  --day-present-text: var(--status-present-text);
+  --day-present-dot: var(--status-present-dot);
+
+  --day-absent-bg: var(--status-error-bg);
+  --day-absent-text: var(--status-error-text);
+  --day-absent-dot: var(--status-error-dot);
+
+  --day-timeoff-bg: var(--status-absent-bg);
+  --day-timeoff-text: var(--status-absent-text);
+  --day-timeoff-dot: var(--status-absent-dot);
+
+  --day-off-bg: var(--bg-subtle);
+  --day-off-text: var(--text-light);
+  --day-off-dot: var(--text-light);
+}
+
+.attendance-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  list-style: none;
+  padding: 0.85rem 1.25rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.legend-swatch[data-status='present'] { background-color: var(--day-present-dot); }
+.legend-swatch[data-status='absent'] { background-color: var(--day-absent-dot); }
+.legend-swatch[data-status='timeoff'] { background-color: var(--day-timeoff-dot); }
+.legend-swatch[data-status='off'] { background-color: var(--day-off-dot); }
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding-bottom: 0.35rem;
+}
+
+.calendar-cell {
+  min-height: 76px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  padding: 0.45rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+/* The leading blanks before the 1st, and days with nothing to say yet. */
+.calendar-cell-blank,
+.calendar-cell[data-status='future'] {
+  background-color: transparent;
+  border-style: dashed;
+  border-color: var(--border);
+}
+
+.calendar-cell[data-status='future'] .calendar-status,
+.calendar-cell[data-status='future'] .calendar-date {
+  color: var(--text-light);
+}
+
+.calendar-cell[data-status='present'] {
+  background-color: var(--day-present-bg);
+  color: var(--day-present-text);
+  border-color: var(--day-present-dot);
+}
+
+.calendar-cell[data-status='absent'] {
+  background-color: var(--day-absent-bg);
+  color: var(--day-absent-text);
+  border-color: var(--day-absent-dot);
+}
+
+.calendar-cell[data-status='timeoff'] {
+  background-color: var(--day-timeoff-bg);
+  color: var(--day-timeoff-text);
+  border-color: var(--day-timeoff-dot);
+}
+
+.calendar-cell[data-status='off'] {
+  background-color: var(--day-off-bg);
+  color: var(--day-off-text);
+  border-color: var(--border);
+}
+
+/* Today gets a ring rather than a colour, so it can mark any status. */
+.calendar-cell[data-today] {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.calendar-date {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.calendar-status {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.calendar-hours {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* Below roughly a phone-and-a-half the seven columns stop being readable, so
+   the labels drop out and the grid becomes a compact colour map. */
+@media (max-width: 640px) {
+  .calendar-grid {
+    gap: 0.3rem;
+    padding: 0.75rem;
+  }
+
+  .calendar-cell {
+    min-height: 44px;
+    padding: 0.3rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .calendar-status,
+  .calendar-hours {
+    display: none;
+  }
+}

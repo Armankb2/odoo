@@ -2,34 +2,33 @@ import { prisma } from '../lib/prisma';
 import { AppError, conflict, unauthenticated, validation } from '../lib/errors';
 import { generateTempPassword, hashPassword, verifyPassword } from '../lib/password';
 import { buildLoginId, nextJoiningSerial } from '../lib/loginId';
+import { getCompany } from '../lib/company';
+import type { Role } from '@prisma/client';
 
 /**
- * Company sign-up — the ONLY public registration path.
+ * Sign-up — the public registration path for the single Dayflow company.
  *
- * Per the wireframe: "Normal user cannot register." This creates a company and
- * its first ADMIN together. Every subsequent account is created by that admin
- * through the employee endpoints, so nobody can self-assign the ADMIN role.
+ * The caller chooses their own role (Admin or Employee). That is a deliberate
+ * product decision, not an oversight: it means **anyone who can reach this
+ * endpoint can make themselves an Admin**, with full access to every
+ * employee's record and salary. The earlier design created the ADMIN only as
+ * a by-product of company registration precisely to prevent that. If this ever
+ * faces the open internet, gate it behind an invite code or drop ADMIN from
+ * the accepted values.
+ *
+ * There is no company to create here — `getCompany()` returns the singleton.
  */
-export async function signUpCompany(input: {
-  companyName: string;
-  companyCode: string;
+export async function signUp(input: {
   name: string;
   email: string;
   phone?: string;
   password: string;
-  logoUrl?: string;
+  role: Role;
 }) {
-  const code = input.companyCode.toUpperCase();
-  if (!/^[A-Z]{2}$/.test(code)) {
-    throw validation('Company code must be exactly two letters');
-  }
-
-  const [existingCompany, existingUser] = await Promise.all([
-    prisma.company.findUnique({ where: { code } }),
-    prisma.user.findUnique({ where: { email: input.email } }),
-  ]);
-  if (existingCompany) throw conflict(`Company code ${code} is already taken`);
+  const existingUser = await prisma.user.findUnique({ where: { email: input.email } });
   if (existingUser) throw conflict('That email is already registered');
+
+  const company = await getCompany();
 
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
   const lastName = rest.join(' ') || firstName;
@@ -38,31 +37,18 @@ export async function signUpCompany(input: {
   const passwordHash = await hashPassword(input.password);
 
   return prisma.$transaction(async (tx) => {
-    const company = await tx.company.create({
-      data: { name: input.companyName, code, logoUrl: input.logoUrl },
-    });
-
-    // Seed the three leave types the wireframe names.
-    await tx.leaveType.createMany({
-      data: [
-        { companyId: company.id, name: 'Paid Time off', isPaid: true },
-        { companyId: company.id, name: 'Sick Leave', isPaid: true, requiresAttachment: true },
-        { companyId: company.id, name: 'Unpaid Leaves', isPaid: false },
-      ],
-    });
-
     const serial = await nextJoiningSerial(tx, company.id, joiningYear);
-    const loginId = buildLoginId(code, firstName, lastName, joiningYear, serial);
+    const loginId = buildLoginId(company.code, firstName, lastName, joiningYear, serial);
 
-    const admin = await tx.user.create({
+    const user = await tx.user.create({
       data: {
         companyId: company.id,
         loginId,
         email: input.email,
         passwordHash,
-        role: 'ADMIN',
-        // The founder chose this password, so there is nothing to force a
-        // change of — unlike an HR-created employee.
+        role: input.role,
+        // They chose this password themselves, so there is nothing to force a
+        // change of — unlike an HR-created employee with a generated one.
         mustChangePassword: false,
         firstName,
         lastName,
@@ -73,13 +59,20 @@ export async function signUpCompany(input: {
       },
     });
 
-    return { company, admin };
+    return { company, user };
   });
 }
 
-/** Sign-in accepts a Login ID or an email — the wireframe labels the field
- *  "Login Id/Email". */
-export async function signIn(identifier: string, password: string) {
+/**
+ * Sign-in accepts a Login ID or an email — the wireframe labels the field
+ * "Login Id/Email" — plus the role the caller says they are signing in as.
+ *
+ * The role is checked, not trusted: it must match what the account actually
+ * holds. It grants nothing (authority still comes from the row in the
+ * database), it only stops someone picking "Admin" and landing in an employee
+ * session wondering why half the nav is missing.
+ */
+export async function signIn(identifier: string, password: string, role: Role) {
   const user = await prisma.user.findFirst({
     where: { OR: [{ loginId: identifier }, { email: identifier }] },
   });
@@ -90,6 +83,17 @@ export async function signIn(identifier: string, password: string) {
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) throw unauthenticated('Incorrect credentials');
   if (!user.isActive) throw new AppError('ACCOUNT_INACTIVE', 'This account has been deactivated');
+
+  // Only reached once the password has been proven, so naming the account's
+  // real role here tells the caller nothing they could not already see after
+  // signing in. Checking it before the password would leak which Login IDs are
+  // admins to anyone who could guess an ID.
+  if (user.role !== role) {
+    throw unauthenticated(
+      `This is an ${user.role === 'ADMIN' ? 'Admin' : 'Employee'} account. ` +
+        `Select ${user.role === 'ADMIN' ? 'Admin' : 'Employee'} and try again.`,
+    );
+  }
 
   return user;
 }

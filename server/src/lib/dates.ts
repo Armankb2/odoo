@@ -53,14 +53,18 @@ export function inclusiveDayCount(start: Date, end: Date): number {
  * basis the requirements provide: there is no holiday calendar anywhere in
  * either source.
  */
+export function isWorkingDay(d: Date, workingDaysPerWeek: number): boolean {
+  const dow = d.getUTCDay(); // 0 = Sunday, 6 = Saturday
+  if (workingDaysPerWeek >= 7) return true;
+  if (workingDaysPerWeek === 6) return dow !== 0; // Sunday off
+  return dow !== 0 && dow !== 6; // Sat + Sun off
+}
+
 export function countWorkingDays(start: Date, endExclusive: Date, workingDaysPerWeek: number): number {
   let count = 0;
   const cursor = new Date(start);
   while (cursor < endExclusive) {
-    const dow = cursor.getUTCDay(); // 0 = Sunday, 6 = Saturday
-    const isWorking =
-      workingDaysPerWeek >= 7 ? true : workingDaysPerWeek === 6 ? dow !== 0 : dow !== 0 && dow !== 6;
-    if (isWorking) count += 1;
+    if (isWorkingDay(cursor, workingDaysPerWeek)) count += 1;
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return count;

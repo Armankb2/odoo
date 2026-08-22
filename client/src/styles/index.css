@@ -1,0 +1,1297 @@
+/* Dayflow HRMS — Hackathon-Grade Signature Plain CSS Stylesheet */
+
+:root {
+  /* Brand Identity: Rich Violet & Emerald Accent Palette */
+  --primary: #7c3aed;             /* Violet-600 */
+  --primary-hover: #6d28d9;       /* Violet-700 */
+  --primary-light: #f5f3ff;       /* Violet-50 */
+  --primary-border: #ddd6fe;      /* Violet-200 */
+  --primary-ring: rgba(124, 58, 237, 0.25);
+  
+  --secondary: #0d9488;           /* Teal-600 */
+  --secondary-light: #ccfbf1;     /* Teal-100 */
+  
+  /* Backgrounds & Surfaces */
+  --bg-body: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  
+  /* Typography Colors */
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+  --text-inverse: #ffffff;
+  
+  /* Borders */
+  --border: #e2e8f0;
+  --border-hover: #cbd5e1;
+  
+  /* Status Indicators (High-Contrast Saturated Pills + Glowing Dots) */
+  --status-present-bg: #dcfce7;
+  --status-present-text: #15803d;
+  --status-present-border: #bbf7d0;
+  --status-present-dot: #16a34a;
+  
+  --status-leave-bg: #ede9fe;
+  --status-leave-text: #5b21b6;
+  --status-leave-border: #ddd6fe;
+  --status-leave-dot: #7c3aed;
+  
+  --status-absent-bg: #fef3c7;
+  --status-absent-text: #b45309;
+  --status-absent-border: #fde68a;
+  --status-absent-dot: #d97706;
+  
+  --status-error-bg: #fee2e2;
+  --status-error-text: #b91c1c;
+  --status-error-border: #fca5a5;
+  --status-error-dot: #dc2626;
+  
+  --status-approved-bg: #d1fae5;
+  --status-approved-text: #065f46;
+  --status-approved-border: #a7f3d0;
+  
+  /* Radii & Geometry */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  
+  /* Depth & Shadows */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 6px 16px -2px rgba(124, 58, 237, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(124, 58, 237, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 24px 48px -12px rgba(15, 23, 42, 0.18);
+  
+  /* Animation Timing */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* -------------------------------------------------------------
+   1. Keyframe Animations
+------------------------------------------------------------- */
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+}
+
+@keyframes pulseDotPurple {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+  }
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 6px rgba(124, 58, 237, 0);
+  }
+}
+
+/* -------------------------------------------------------------
+   2. Base Resets & Global Ambient Background
+------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-body);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.06) 0px, transparent 45%),
+    radial-gradient(at 100% 100%, rgba(13, 148, 136, 0.05) 0px, transparent 45%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  font-family: var(--font-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s var(--ease-smooth);
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* -------------------------------------------------------------
+   3. Global Layout & Page Wrappers
+------------------------------------------------------------- */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 2.25rem 1.5rem;
+}
+
+.employees-page,
+.attendance-page,
+.time-off-page,
+.profile-page,
+.edit-employee-page,
+.new-employee-page,
+.employee-detail-page {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.85rem;
+  animation: pageFadeIn 0.3s var(--ease-smooth) forwards;
+}
+
+.edit-employee-page,
+.new-employee-page {
+  max-width: 800px;
+}
+
+/* -------------------------------------------------------------
+   4. Top Nav Bar & Distinct Brand Identity
+------------------------------------------------------------- */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 2rem;
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  border-top: 3px solid var(--primary); /* Signature Brand Top Accent Strip */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--text-main);
+  text-decoration: none !important;
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.brand:hover {
+  transform: scale(1.02);
+}
+
+.company-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.company-logo-fallback {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+  letter-spacing: 0.05em;
+}
+
+.company-name {
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.main-nav {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  background-color: var(--bg-subtle);
+  padding: 0.3rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.main-nav a {
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.45rem 1.1rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s var(--ease-smooth);
+  font-size: 0.9rem;
+}
+
+.main-nav a:hover {
+  color: var(--primary);
+  background-color: var(--bg-surface);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.main-nav a.active {
+  color: var(--primary);
+  background-color: var(--bg-surface);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.avatar-menu {
+  position: relative;
+}
+
+.avatar-button {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-lg);
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.avatar-button:hover, .avatar-button[aria-expanded="true"] {
+  background-color: var(--bg-subtle);
+  border-color: var(--border);
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.avatar-fallback {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary) 0%, #6d28d9 100%);
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+}
+
+.avatar-large {
+  width: 80px;
+  height: 80px;
+  font-size: 1.75rem;
+  border-width: 3px;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15), var(--shadow-md);
+}
+
+.avatar-name {
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.avatar-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 200px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  list-style: none;
+  padding: 0.5rem 0;
+  z-index: 200;
+  animation: pageFadeIn 0.15s var(--ease-smooth);
+}
+
+.avatar-dropdown a, .avatar-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 1.15rem;
+  color: var(--text-main);
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.avatar-dropdown a:hover, .avatar-dropdown button:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+/* -------------------------------------------------------------
+   5. Page Header & Typography Hierarchy
+------------------------------------------------------------- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.35rem;
+  border-bottom: 1.5px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.page-header h1 {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.field-label, table th {
+  font-size: 0.725rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.field-value {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* Distinct Placeholder / Empty Values */
+.field-value:empty::before,
+.field-value:contains("—") {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* -------------------------------------------------------------
+   6. Springy Buttons & Interactive Controls
+------------------------------------------------------------- */
+.button, button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  color: var(--text-inverse);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease, background 0.2s ease;
+  text-decoration: none !important;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+}
+
+.button:hover, button:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+}
+
+.button:active, button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+}
+
+.button:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3.5px var(--primary-ring);
+}
+
+button:disabled, .button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+input, select, textarea {
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3.5px var(--primary-ring);
+}
+
+/* Search Bar */
+.search-bar {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  background-color: var(--bg-surface);
+  padding: 0.9rem 1.25rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-bar label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.925rem;
+}
+
+/* -------------------------------------------------------------
+   7. SIGNATURE WOW SCREEN: Employee Cards & Grid
+------------------------------------------------------------- */
+.employee-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+  gap: 1.5rem;
+  list-style: none;
+}
+
+.employee-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  transition: transform 0.25s var(--ease-spring), box-shadow 0.25s ease, border-color 0.25s ease;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.employee-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-border);
+}
+
+.employee-card-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.15rem;
+  padding: 1.5rem;
+  text-decoration: none !important;
+  color: inherit;
+}
+
+.employee-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.employee-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.employee-position {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.employee-department {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+.employee-loginid {
+  font-size: 0.75rem;
+  font-family: monospace;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+  font-weight: 700;
+  margin-top: 0.35rem;
+  border: 1px solid var(--primary-border);
+}
+
+/* Signature Pulsing Status Badges */
+.employee-status {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: fit-content;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.employee-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.employee-status.employee-status-present, [data-status="present"] {
+  background-color: var(--status-present-bg);
+  color: var(--status-present-text);
+  border: 1px solid var(--status-present-border);
+}
+.employee-status.employee-status-present::before {
+  background-color: var(--status-present-dot);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.employee-status.employee-status-leave, [data-status="leave"] {
+  background-color: var(--status-leave-bg);
+  color: var(--status-leave-text);
+  border: 1px solid var(--status-leave-border);
+}
+.employee-status.employee-status-leave::before {
+  background-color: var(--status-leave-dot);
+  animation: pulseDotPurple 2s infinite ease-in-out;
+}
+
+.employee-status.employee-status-absent, [data-status="absent"] {
+  background-color: var(--status-absent-bg);
+  color: var(--status-absent-text);
+  border: 1px solid var(--status-absent-border);
+}
+.employee-status.employee-status-absent::before {
+  background-color: var(--status-absent-dot);
+}
+
+/* -------------------------------------------------------------
+   8. Profile Page & Active Pill Tabs
+------------------------------------------------------------- */
+.profile-header {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 2.25rem;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-identity, .profile-job {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.profile-identity h2 {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.profile-tabs {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-list {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--bg-subtle);
+  padding: 0.4rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
+  width: fit-content;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  padding: 0.6rem 1.35rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all 0.2s var(--ease-smooth);
+  box-shadow: none;
+}
+
+.tab:hover {
+  color: var(--primary);
+  background-color: rgba(255, 255, 255, 0.6);
+  box-shadow: none;
+}
+
+.tab.tab-active, .tab[aria-selected="true"] {
+  color: var(--primary);
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.tab-panel h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-top: 1rem;
+  border-bottom: 1px solid var(--bg-subtle);
+  padding-bottom: 0.5rem;
+}
+
+.skill-list, .certification-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0.5rem 0;
+}
+
+.skill-list li, .certification-list li {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------
+   9. Bounded Card Empty & Error States
+------------------------------------------------------------- */
+.state {
+  padding: 3.5rem 2rem;
+  text-align: center;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  margin: 1.5rem 0;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.state-loading {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.state-loading::before {
+  content: '';
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--primary-border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.state-empty p {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.state-error {
+  background-color: var(--status-error-bg);
+  border-color: var(--status-error-border);
+  color: var(--status-error-text);
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------------
+   10. Attendance & Check-In Widget
+------------------------------------------------------------- */
+.check-in-widget {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.35rem 1.85rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.status-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.status-dot-in {
+  background-color: var(--status-present-dot);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.status-dot.status-dot-out {
+  background-color: var(--status-absent-dot);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+}
+
+.status-dot.status-dot-done {
+  background-color: var(--status-leave-dot);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+}
+
+.check-in-label {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-main);
+  flex: 1;
+}
+
+.month-nav, .day-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  background-color: var(--bg-surface);
+  padding: 0.85rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.month-nav button, .day-nav button {
+  padding: 0.45rem 0.95rem;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.month-label {
+  font-weight: 800;
+  font-size: 1.15rem;
+  min-width: 180px;
+  text-align: center;
+}
+
+.summary-tiles, .balance-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  list-style: none;
+}
+
+.summary-tile, .balance-tile {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
+}
+
+.summary-tile:hover, .balance-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.tile-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.03em;
+}
+
+.tile-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.tile-detail {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-top: 0.25rem;
+}
+
+/* -------------------------------------------------------------
+   11. Tables & Horizontal Scroll Container
+------------------------------------------------------------- */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.925rem;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+thead th {
+  background-color: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-align: left;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  font-size: 0.725rem;
+  letter-spacing: 0.07em;
+}
+
+tbody td, tfoot td, tfoot th {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+tr[data-missing-checkout="true"] {
+  background-color: #fff7ed;
+}
+
+tr[data-missing-checkout="true"] td {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+tr[data-present="true"] {
+  background-color: #f0fdf4;
+}
+
+/* Leave Table Cell Statuses */
+.leave-status {
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.leave-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.leave-status.leave-status-pending, tr[data-status="PENDING"] .leave-status {
+  color: var(--status-absent-text);
+}
+.leave-status.leave-status-pending::before, tr[data-status="PENDING"] .leave-status::before {
+  background-color: var(--status-absent-dot);
+}
+
+.leave-status.leave-status-approved, tr[data-status="APPROVED"] .leave-status {
+  color: var(--status-present-text);
+}
+.leave-status.leave-status-approved::before, tr[data-status="APPROVED"] .leave-status::before {
+  background-color: var(--status-present-dot);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.leave-status.leave-status-rejected, tr[data-status="REJECTED"] .leave-status {
+  color: var(--status-error-text);
+}
+.leave-status.leave-status-rejected::before, tr[data-status="REJECTED"] .leave-status::before {
+  background-color: var(--status-error-dot);
+}
+
+/* -------------------------------------------------------------
+   12. Auth Page Card Elevation
+------------------------------------------------------------- */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.08) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, rgba(13, 148, 136, 0.08) 0px, transparent 50%),
+              #f8fafc;
+  padding: 2rem 1.5rem;
+}
+
+.auth-form {
+  background-color: var(--bg-surface);
+  width: 100%;
+  max-width: 440px;
+  padding: 2.75rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: pageFadeIn 0.3s var(--ease-smooth);
+}
+
+.auth-form h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  text-align: center;
+  color: var(--text-main);
+  letter-spacing: -0.03em;
+}
+
+.auth-form label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: -0.4rem;
+}
+
+.auth-alt {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+/* -------------------------------------------------------------
+   13. Dialogs & Modals
+------------------------------------------------------------- */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.dialog {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  max-width: 540px;
+  width: 100%;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: pageFadeIn 0.2s var(--ease-smooth);
+}
+
+.dialog-header {
+  padding: 1.5rem 1.75rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8fafc;
+}
+
+.dialog-header h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.dialog-header button {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  box-shadow: none;
+}
+
+.dialog-body {
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.validity-period {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.95rem;
+}
+
+.validity-period legend {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0 0.4rem;
+  color: var(--text-muted);
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+/* -------------------------------------------------------------
+   14. Forms, Admin & Alerts
+------------------------------------------------------------- */
+.employee-form, .profile-form {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  box-shadow: var(--shadow-sm);
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+legend {
+  font-weight: 800;
+  padding: 0 0.5rem;
+  color: var(--text-main);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-row label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.readonly-identity, .credentials {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1.35rem;
+}
+
+.readonly-identity dt, .credentials dt {
+  font-weight: 800;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.readonly-identity dd, .credentials dd {
+  font-weight: 800;
+  color: var(--text-main);
+  font-family: monospace;
+}
+
+.notice {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 0.95rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.warning {
+  background-color: #fffbe0;
+  border: 1px solid #fef08a;
+  color: #854d0e;
+  padding: 0.95rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
+.form-error {
+  background-color: var(--status-error-bg);
+  border: 1px solid var(--status-error-border);
+  color: var(--status-error-text);
+  padding: 0.95rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.view-only-note {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.danger-zone {
+  border: 1px solid var(--status-error-border);
+  background-color: #fff5f5;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.danger-zone h3 {
+  color: var(--status-error-text);
+  font-weight: 800;
+}
+
+.danger-zone button {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.row-actions button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.row-actions button:hover {
+  background-color: var(--bg-subtle);
+  border-color: var(--border-hover);
+}
+
+.actions {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}

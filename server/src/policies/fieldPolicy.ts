@@ -89,11 +89,20 @@ export function filterPatch<T extends Record<string, unknown>>(
   return out as Partial<T>;
 }
 
-/** Salary is omitted from the payload entirely for non-admins rather than
- *  hidden in the UI — sending it and hiding it leaks every employee's pay to
- *  anyone with dev tools open. */
-export function canViewSalary(actor: { role: Role }): boolean {
-  return actor.role === 'ADMIN';
+/**
+ * Salary visibility.
+ *
+ * An employee may view their OWN salary — "Payroll data is read-only for
+ * employees" (PDF §3.6.1) — but nobody else's. Admins may view anyone's.
+ * Another employee's salary is omitted from the payload entirely rather than
+ * hidden in the UI: anything sent to the browser is readable.
+ *
+ * Note this is *view* only. There is no path by which an employee can change
+ * salary: it is absent from both edit allow-lists below, and every salary
+ * write endpoint is gated on requireRole('ADMIN').
+ */
+export function canViewSalary(actor: { id: number; role: Role }, targetUserId: number): boolean {
+  return actor.role === 'ADMIN' || actor.id === targetUserId;
 }
 
 export function stripHiddenFields<T extends Record<string, unknown>>(row: T): Partial<T> {

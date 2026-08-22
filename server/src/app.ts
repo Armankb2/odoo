@@ -3,7 +3,11 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { authRouter } from './routes/auth.routes';
 import { employeeRouter } from './routes/employee.routes';
+import { attendanceRouter } from './routes/attendance.routes';
+import { leaveRouter } from './routes/leave.routes';
+import { salaryRouter } from './routes/salary.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { UPLOAD_DIR } from './lib/upload';
 
 export function createApp() {
   const app = express();
@@ -24,6 +28,13 @@ export function createApp() {
 
   app.use('/api/auth', authRouter);
   app.use('/api/employees', employeeRouter);
+  app.use('/api/attendance', attendanceRouter);
+  app.use('/api/leave', leaveRouter);
+  app.use('/api/salary', salaryRouter);
+
+  // Uploaded files. `index: false` and `dotfiles: 'deny'` so the directory is
+  // never listable and dotfiles are never served.
+  app.use('/uploads', express.static(UPLOAD_DIR, { index: false, dotfiles: 'deny' }));
 
   app.use((_req, res) =>
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such endpoint' } }),

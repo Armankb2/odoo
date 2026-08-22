@@ -34,6 +34,7 @@ Status: `todo` → `in-progress` → `done`. One branch per task; never commit t
 | 20 | Employee attendance as a colour-coded month calendar | `fix-employee-scope-and-calendar` | done |
 | 21 | Email verification: OTP mailed at sign-up | `feat-email-otp-verification` | done |
 | 22 | Profile picture upload (replaces the initials fallback) | `feat-avatar-upload` | done |
+| 23 | Move the OTP from sign-up to sign-in; clearer error when the API is down | `fix-otp-on-signin` | done |
 
 "done (API)" means the backend endpoint exists and is tested.
 

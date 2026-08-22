@@ -4,33 +4,11 @@ import { validateBody } from '../middleware/validate';
 import { requireAuth } from '../middleware/requireAuth';
 import { COOKIE_NAME, cookieOptions, signToken } from '../lib/jwt';
 import { changePassword, signIn, signUp } from '../services/auth.service';
-import { consumeOtp, sendSignUpOtp, verifyOtp } from '../services/otp.service';
+import { consumeOtp, maskEmail, sendLoginOtp, verifyOtp } from '../services/otp.service';
 import { prisma } from '../lib/prisma';
 import { unauthenticated } from '../lib/errors';
 
 export const authRouter = Router();
-
-/**
- * Step 1 of sign-up: email a six-digit code to the address the caller typed.
- *
- * PDF §3.1.1 requires email verification. It matters more here than it
- * normally would, because sign-up lets the caller pick the ADMIN role — at
- * least the address has to be real and theirs.
- */
-const sendOtpSchema = z.object({ email: z.string().email() });
-
-authRouter.post('/send-otp', validateBody(sendOtpSchema), async (req, res, next) => {
-  try {
-    const { expiresAt, delivered } = await sendSignUpOtp(req.body.email);
-    // `delivered: false` means SMTP is not configured and the code was logged
-    // to the server console instead. The client surfaces that so a developer
-    // on a fresh clone knows where to look rather than waiting for an email
-    // that will never arrive. The code itself is never in the response.
-    res.json({ sent: true, delivered, expiresAt });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // Dayflow is a single company, so sign-up asks for a person, not an
 // organisation. `role` is the caller's own choice — see the warning on
@@ -43,19 +21,11 @@ const signUpSchema = z.object({
   role: z.enum(['ADMIN', 'EMPLOYEE'], {
     errorMap: () => ({ message: 'Choose Admin or Employee' }),
   }),
-  otp: z
-    .string()
-    .regex(/^\d{6}$/, 'Enter the 6-digit code from your email'),
 });
 
 authRouter.post('/signup', validateBody(signUpSchema), async (req, res, next) => {
   try {
-    // Checked but NOT consumed yet: if account creation fails after this, the
-    // caller must still be able to retry with the same code.
-    const otpId = await verifyOtp(req.body.email, req.body.otp);
-
     const { company, user } = await signUp(req.body);
-    await consumeOtp(otpId);
     const token = signToken({ sub: user.id, companyId: company.id, role: user.role });
     res.cookie(COOKIE_NAME, token, cookieOptions());
     res.status(201).json({
@@ -66,7 +36,7 @@ authRouter.post('/signup', validateBody(signUpSchema), async (req, res, next) =>
   }
 });
 
-const loginSchema = z.object({
+const credentialsSchema = z.object({
   identifier: z.string().min(1, 'Login ID or email is required'),
   password: z.string().min(1, 'Password is required'),
   // Verified against the account, never trusted as a grant of authority.
@@ -75,9 +45,44 @@ const loginSchema = z.object({
   }),
 });
 
-authRouter.post('/login', validateBody(loginSchema), async (req, res, next) => {
+/**
+ * Step 1 of sign-in: prove the password, then mail a six-digit code to the
+ * address on the account (PDF §3.1.1).
+ *
+ * `signIn` runs first on purpose. Issuing a code to anyone who names an
+ * address would turn this endpoint into a mailbomb relay and would confirm
+ * which accounts exist; behind the password it does neither. The address is
+ * returned masked so you can tell which mailbox to open without the endpoint
+ * handing out a full address.
+ */
+authRouter.post('/send-otp', validateBody(credentialsSchema), async (req, res, next) => {
   try {
     const user = await signIn(req.body.identifier, req.body.password, req.body.role);
+    const { expiresAt, delivered } = await sendLoginOtp(user.email);
+    // `delivered: false` means SMTP is not configured and the code went to the
+    // server console instead. Surfaced so nobody waits on an email that is
+    // never coming. The code itself is never in the response.
+    res.json({ sent: true, delivered, expiresAt, sentTo: maskEmail(user.email) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const loginSchema = credentialsSchema.extend({
+  otp: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code from your email'),
+});
+
+authRouter.post('/login', validateBody(loginSchema), async (req, res, next) => {
+  try {
+    // The password is re-checked here rather than trusted from step 1: that
+    // step issued no token, so nothing carries between the two requests.
+    const user = await signIn(req.body.identifier, req.body.password, req.body.role);
+
+    // Keyed on the account's own address, not anything the caller sent, so a
+    // code mailed to one account cannot be replayed against another.
+    const otpId = await verifyOtp(user.email, req.body.otp);
+    await consumeOtp(otpId);
+
     const token = signToken({ sub: user.id, companyId: user.companyId, role: user.role });
     res.cookie(COOKIE_NAME, token, cookieOptions());
     res.json({

@@ -6,6 +6,10 @@
 CLAUDE.md
 docs/SESSION_LOG.md
 
+# Wireframe source and its extraction — local reference only
+docs/WIREFRAME_SPEC.md
+*.excalidraw
+
 # Dependencies
 node_modules/
 __pycache__/

@@ -4,6 +4,8 @@
   "private": true,
   "description": "Dayflow HRMS backend — Express + Prisma + MySQL",
   "scripts": {
+    "postinstall": "prisma generate",
+    "setup": "prisma generate && prisma migrate deploy",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",

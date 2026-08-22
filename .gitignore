@@ -112,3 +112,7 @@ server/src/generated/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Local test credentials. Contains working passwords for the seeded accounts;
+# must never reach the shared remote.
+test_work.txt

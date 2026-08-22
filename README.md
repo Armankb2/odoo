@@ -34,7 +34,7 @@ Requires Node 22+ and a local MySQL 8 instance. Two terminals.
 ```bash
 # 1 — API
 cd server
-npm install
+npm install                 # also runs `prisma generate` (postinstall)
 cp .env.example .env        # DATABASE_URL, JWT_SECRET, and SMTP_* for email
 npm run db:migrate          # create the schema
 npm run db:seed             # company config, 9 users, attendance, leave
@@ -50,6 +50,28 @@ Vite proxies `/api` and `/uploads` to the API, so everything is same-origin in
 development and there is no CORS to configure.
 
 `npm run db:studio` (in `server/`) opens a browsable view of the database.
+
+### Setting up on another machine, or after pulling schema changes
+
+```bash
+cd server && npm run setup      # prisma generate && prisma migrate deploy
+npm run db:seed                 # only if the database is new or empty
+```
+
+**Why this matters.** Prisma generates a typed client into `node_modules` from
+`schema.prisma`. Pulling a commit that adds a model does **not** regenerate it,
+so on a machine where `node_modules` already existed the client is stale and
+the new model is simply `undefined`:
+
+```
+TypeError: Cannot read properties of undefined (reading 'findFirst')
+    at sendLoginOtp (server/src/services/otp.service.ts:50)
+```
+
+That is not a bug in the code — it means `prisma generate` has not run since
+the schema changed. `npm install` now regenerates automatically via
+`postinstall`, and the server refuses to start with a clear message if the
+client is still behind, rather than failing at request time.
 
 ### Email verification
 

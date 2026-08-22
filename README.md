@@ -6,26 +6,79 @@ An HRMS that digitizes core HR operations: employee onboarding and profiles,
 attendance tracking, leave and time-off management, payroll visibility, and
 approval workflows for HR/Admin.
 
-**Status:** backend foundation in progress — database schema, authentication
-and role-based access are written; the frontend has not been started.
+**Status:** backend API in progress. Database schema, authentication,
+role-based access, attendance and time-off are implemented and tested against
+a live MySQL instance. Salary engine and the React frontend are not started.
+
+### API surface so far
+
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /api/auth/{signup,login,logout,change-password}`, `GET /api/auth/me` |
+| Employees | `GET /api/employees`, `GET/PATCH /api/employees/:id`, `POST /api/employees`, `PATCH /api/employees/:id/deactivate` |
+| Attendance | `GET /api/attendance/{today,me}`, `POST /api/attendance/{check-in,check-out}`, `GET /api/attendance` (admin), `GET /api/attendance/{user,payable}/:id` |
+| Time Off | `GET /api/leave/{types,balance,requests}`, `POST /api/leave/requests`, `PATCH /api/leave/requests/:id/{approve,reject}`, `DELETE /api/leave/requests/:id`, `POST /api/leave/allocations` |
+| Salary | `GET /api/salary/:userId` (own, or any for admin), `POST /api/salary/:userId/preview` (admin), `PATCH /api/salary/:userId` (admin) |
+
+Employees can **view** their own salary but never change it: reads allow the
+own record, writes are admin-only, and salary appears in neither profile edit
+allow-list.
 
 **Stack:** React (Vite) + Node (Express) + MySQL 8, with Prisma, TanStack
 Query, React Hook Form and Tailwind/shadcn.
 
-## Running the backend
+## Running it
 
-Requires Node 22+ and a local MySQL 8 instance.
+Requires Node 22+ and a local MySQL 8 instance. Two terminals.
 
 ```bash
+# 1 — API
 cd server
 npm install
 cp .env.example .env        # then set DATABASE_URL and JWT_SECRET
 npm run db:migrate          # create the schema
 npm run db:seed             # demo company, 8 users, attendance, leave
 npm run dev                 # http://localhost:4000
+
+# 2 — web app
+cd client
+npm install
+npm run dev                 # http://localhost:5173
 ```
 
-`npm run db:studio` opens a browsable view of the database.
+Vite proxies `/api` and `/uploads` to the API, so everything is same-origin in
+development and there is no CORS to configure.
+
+`npm run db:studio` (in `server/`) opens a browsable view of the database.
+
+**Demo logins** — both with password `password123`:
+
+| Login ID | Role |
+|---|---|
+| `OIDHMO20220001` | Admin / HR |
+| `OIARKH20220002` | Employee |
+
+> **If the password contains `#`** (or any of `#?@/:`), percent-encode it in
+> `DATABASE_URL` — `#` starts a URL fragment and silently truncates the rest.
+> `#` becomes `%23`.
+
+## Styling
+
+**The React app ships deliberately unstyled** — no CSS file, no colours, no
+layout rules. Structure and behaviour are complete; the visual design is a
+separate piece of work.
+
+Every element carries a semantic `className`, and state that matters visually
+is exposed as a data attribute rather than baked in:
+
+- `data-status="present|leave|absent"` on employee cards — the wireframe's
+  🟢 / ✈️ / 🟡 indicators
+- `data-state="in|out|done"` on the check-in widget — its red/green dot
+- `data-status="PENDING|APPROVED|REJECTED"` on leave rows
+- `data-missing-checkout` on attendance rows where someone forgot to check out
+
+To add styles, drop a stylesheet in and import it from `client/src/main.tsx`
+(or link it in `client/index.html`) — both carry a comment marking the spot.
 
 ## What's here
 

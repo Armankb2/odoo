@@ -1,0 +1,343 @@
+// Dayflow HRMS — MySQL schema
+//
+// Design rules held throughout:
+//  1. Money is DECIMAL, never Float. Binary floats drift by paise and it shows.
+//  2. Derived values are NEVER stored: yearly wage, salary component amounts,
+//     work/extra hours, leave balance, and the present/leave/absent status are
+//     all computed on read. A stored copy is a second source of truth that
+//     silently goes stale.
+//  3. Every tenant-owned row carries companyId. Only one company exists in the
+//     demo, but the column means multi-company is never a migration.
+//  4. Constraints enforce invariants the application would otherwise race on.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- enums
+
+enum Role {
+  ADMIN // Admin / HR Officer — one combined role, per the wireframe
+  EMPLOYEE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  OTHER
+}
+
+enum WageType {
+  FIXED // the only type the wireframe specifies
+}
+
+enum ComputationType {
+  PERCENT // value is a percentage of `basis`
+  FIXED // value is an absolute monthly amount
+  REMAINDER // wage minus every other component — keeps the total exact
+}
+
+enum ComponentBasis {
+  WAGE
+  BASIC
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ---------------------------------------------------------------- tenant
+
+model Company {
+  id      Int     @id @default(autoincrement())
+  name    String  @db.VarChar(150)
+  /// Two-letter prefix for generated Login IDs — "OI" for Odoo India.
+  code    String  @unique @db.Char(2)
+  logoUrl String? @db.VarChar(255)
+
+  // Statutory rates. The wireframe calls these configuration, not per-employee
+  // data, so they live at the company level.
+  pfRateEmployee  Decimal @default(12.00) @db.Decimal(5, 2)
+  pfRateEmployer  Decimal @default(12.00) @db.Decimal(5, 2)
+  professionalTax Decimal @default(200.00) @db.Decimal(10, 2)
+
+  /// Used to derive "total working days" — no holiday calendar exists in the
+  /// requirements, so this is the only basis available.
+  workingDaysPerWeek Int @default(5)
+  standardDayMinutes Int @default(480)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  leaveTypes LeaveType[]
+  sequences  LoginIdSequence[]
+}
+
+/// Per-company, per-year counter behind the Login ID serial.
+/// Exists because `COUNT(*) + 1` races: two employees created concurrently
+/// would receive the same serial. Incremented atomically inside the same
+/// transaction that creates the user.
+model LoginIdSequence {
+  companyId  Int
+  year       Int
+  lastSerial Int @default(0)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, year])
+}
+
+// ---------------------------------------------------------------- people
+
+/// One table, not a User/Employee split: in this system every employee IS a
+/// login. Splitting them would add a join to nearly every query and buy nothing.
+model User {
+  id        Int  @id @default(autoincrement())
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  // --- authentication
+  /// Generated, never user-supplied. Format: OI + JO + DO + 2022 + 0001
+  loginId            String  @unique @db.VarChar(20)
+  email              String  @unique @db.VarChar(150)
+  passwordHash       String  @db.VarChar(255)
+  role               Role    @default(EMPLOYEE)
+  /// Set when HR creates the account with a generated password. While true the
+  /// API rejects every route except change-password.
+  mustChangePassword Boolean @default(true)
+  /// Employees are deactivated, never deleted — attendance and leave history
+  /// must outlive their employment.
+  isActive           Boolean @default(true)
+
+  // --- profile header (shown on every profile screen)
+  firstName   String  @db.VarChar(80)
+  lastName    String  @db.VarChar(80)
+  mobile      String? @db.VarChar(20)
+  avatarUrl   String? @db.VarChar(255)
+  jobPosition String? @db.VarChar(100)
+  department  String? @db.VarChar(100)
+  location    String? @db.VarChar(100)
+
+  managerId Int?
+  manager   User?  @relation("Manages", fields: [managerId], references: [id], onDelete: SetNull)
+  reports   User[] @relation("Manages")
+
+  dateOfJoining DateTime @db.Date
+  /// Components of loginId, kept as columns so the serial is uniquely
+  /// constrained rather than merely embedded in a string.
+  joiningYear   Int
+  joiningSerial Int
+
+  // --- Private Info tab
+  dateOfBirth     DateTime?      @db.Date
+  nationality     String?        @db.VarChar(60)
+  gender          Gender?
+  maritalStatus   MaritalStatus?
+  personalEmail   String?        @db.VarChar(150)
+  residingAddress String?        @db.Text
+
+  // --- Private Info tab: bank details
+  accountNumber String? @db.VarChar(50)
+  bankName      String? @db.VarChar(100)
+  ifscCode      String? @db.VarChar(20)
+  panNo         String? @db.VarChar(20)
+  uanNo         String? @db.VarChar(30)
+  empCode       String? @db.VarChar(30)
+
+  // --- Resume tab
+  about               String? @db.Text
+  whatILoveAboutJob   String? @db.Text
+  interestsAndHobbies String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  skills          Skill[]
+  certifications  Certification[]
+  salaryStructure SalaryStructure?
+  attendances     Attendance[]
+  allocations     LeaveAllocation[]
+  leaveRequests   LeaveRequest[]  @relation("Requester")
+  reviewedLeaves  LeaveRequest[]  @relation("Reviewer")
+
+  @@unique([companyId, joiningYear, joiningSerial])
+  @@index([companyId])
+  @@index([companyId, role])
+  @@index([managerId])
+}
+
+model Skill {
+  id     Int    @id @default(autoincrement())
+  userId Int
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String @db.VarChar(80)
+
+  @@index([userId])
+}
+
+model Certification {
+  id     Int     @id @default(autoincrement())
+  userId Int
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String  @db.VarChar(120)
+  issuer String? @db.VarChar(120)
+  year   Int?
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------- salary
+
+model SalaryStructure {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  wageType WageType @default(FIXED)
+  /// Yearly wage is monthlyWage * 12, computed on read. Storing both invites
+  /// them to disagree.
+  monthlyWage Decimal @db.Decimal(12, 2)
+
+  workingDaysPerWeek Int @default(5)
+  breakMinutes       Int @default(60)
+
+  effectiveFrom DateTime @db.Date
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  components SalaryComponent[]
+
+  @@index([userId])
+}
+
+/// Component *rules*, not amounts. Amounts are recomputed from monthlyWage on
+/// every read, which is exactly what "component values should auto-update when
+/// the wage amount changes" requires.
+model SalaryComponent {
+  id                Int             @id @default(autoincrement())
+  salaryStructureId Int
+  salaryStructure   SalaryStructure @relation(fields: [salaryStructureId], references: [id], onDelete: Cascade)
+
+  name            String          @db.VarChar(80)
+  computationType ComputationType
+  /// Null for FIXED and REMAINDER.
+  basis           ComponentBasis?
+  /// A percentage when PERCENT, an absolute amount when FIXED, ignored for
+  /// REMAINDER.
+  value           Decimal         @default(0) @db.Decimal(12, 4)
+  sortOrder       Int             @default(0)
+
+  @@unique([salaryStructureId, name])
+  @@index([salaryStructureId])
+}
+
+// ------------------------------------------------------------ attendance
+
+model Attendance {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  /// Local calendar date of the check-in.
+  date     DateTime  @db.Date
+  checkIn  DateTime?
+  /// Nullable on purpose: "checked in and never checked out" is a real case
+  /// neither requirements source addresses. Such a row reports zero work hours.
+  checkOut DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // The constraint that makes a double check-in a database error rather than
+  // an application-level read-then-write race.
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@index([date])
+}
+
+// ---------------------------------------------------------------- leave
+
+model LeaveType {
+  id        Int     @id @default(autoincrement())
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name String @db.VarChar(60)
+  /// Paid Time off and Sick Leave are paid; Unpaid Leaves is not. Unpaid leave
+  /// reduces payable days.
+  isPaid Boolean @default(true)
+  /// Drives the wireframe's "(For sick leave certificate)" note.
+  requiresAttachment Boolean @default(false)
+
+  allocations LeaveAllocation[]
+  requests    LeaveRequest[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+}
+
+/// The balance behind "24 Days Available". Remaining is computed as
+/// allocatedDays minus approved days — never stored as a running counter,
+/// because every approve/reject/cancel path would have to update it and one
+/// missed path leaves a permanently wrong number on screen.
+model LeaveAllocation {
+  id          Int @id @default(autoincrement())
+  userId      Int
+  leaveTypeId Int
+  year        Int
+
+  allocatedDays Decimal @db.Decimal(5, 2)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, leaveTypeId, year])
+  @@index([userId])
+  @@index([leaveTypeId])
+}
+
+model LeaveRequest {
+  id          Int @id @default(autoincrement())
+  userId      Int
+  leaveTypeId Int
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  /// Stored rather than derived: the wireframe shows "Allocation — 01.00 Days"
+  /// as an editable field, and half-days (0.50) must be representable.
+  days      Decimal  @db.Decimal(5, 2)
+
+  remarks       String? @db.Text
+  attachmentUrl String? @db.VarChar(255)
+
+  status        LeaveStatus @default(PENDING)
+  reviewedById  Int?
+  reviewComment String?     @db.Text
+  reviewedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User      @relation("Requester", fields: [userId], references: [id], onDelete: Restrict)
+  reviewedBy User?     @relation("Reviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  leaveType  LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([leaveTypeId])
+  @@index([startDate, endDate])
+  @@index([status])
+}

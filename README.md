@@ -6,10 +6,26 @@ An HRMS that digitizes core HR operations: employee onboarding and profiles,
 attendance tracking, leave and time-off management, payroll visibility, and
 approval workflows for HR/Admin.
 
-**Status:** requirements analysed and stack chosen; application not started.
+**Status:** backend foundation in progress — database schema, authentication
+and role-based access are written; the frontend has not been started.
 
 **Stack:** React (Vite) + Node (Express) + MySQL 8, with Prisma, TanStack
-Query, React Hook Form and Tailwind/shadcn. See `docs/TECH_STACK.md`.
+Query, React Hook Form and Tailwind/shadcn.
+
+## Running the backend
+
+Requires Node 22+ and a local MySQL 8 instance.
+
+```bash
+cd server
+npm install
+cp .env.example .env        # then set DATABASE_URL and JWT_SECRET
+npm run db:migrate          # create the schema
+npm run db:seed             # demo company, 8 users, attendance, leave
+npm run dev                 # http://localhost:4000
+```
+
+`npm run db:studio` opens a browsable view of the database.
 
 ## What's here
 

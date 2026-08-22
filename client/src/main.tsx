@@ -4,8 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import { App } from './App';
 
-// No stylesheet import on purpose — styling is owned by someone else.
-// Add `import './styles.css'` here once it exists.
+import './styles/index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -53,9 +53,16 @@ development and there is no CORS to configure.
 
 ### Email verification
 
-Sign-up mails a **six-digit code** to the address entered and will not create
-the account until that code is typed back in (PDF §3.1.1). Configure SMTP in
-`server/.env`:
+**Sign-in** is two steps (PDF §3.1.1). Enter your Login ID / email, password
+and role, press **Send code**, and a six-digit code is mailed to the address on
+your account; the sign-in completes once you type it back in. **Sign-up does
+not ask for a code.**
+
+The password is checked *before* the code is sent, so this cannot be used to
+mailbomb an address or to find out which accounts exist. The address is shown
+masked (`ad***@example.com`).
+
+Configure SMTP in `server/.env`:
 
 ```
 SMTP_HOST=smtp.gmail.com
@@ -72,7 +79,15 @@ go in **without the spaces** Google shows them with. Port 587 is STARTTLS —
 port 465 also works and the code switches to implicit TLS automatically.
 
 **Without SMTP configured the app still works**: the code is printed to the
-server console instead of emailed, and the sign-up form tells you so.
+server console instead of emailed, and the sign-in form tells you so.
+
+**The demo accounts cannot receive email** — `admin@dayflow.local` and the
+`*@dayflow.test` addresses do not exist. Outside production the code is always
+**printed to the server console** as well, so those logins keep working:
+
+```
+[otp] verification code for admin@dayflow.local: 089345
+```
 
 Codes expire after 10 minutes, die after 5 wrong guesses, and cannot be reused.
 Requesting a new one retires the previous one, with a 60-second cooldown
@@ -95,7 +110,8 @@ clear error rather than a half-working session.
 | Email | `admin@dayflow.local` |
 | Password | `Admin@12345` |
 
-Either the Login ID or the email works. The `2026` in that Login ID is the
+Either the Login ID or the email works, and you will need the verification
+code — for this account it appears in the server console (see above). The `2026` in that Login ID is the
 year you seeded in, so it will differ on a later run — `db:seed` prints the
 exact value it created, and the email and password never change.
 

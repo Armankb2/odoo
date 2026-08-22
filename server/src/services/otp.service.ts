@@ -1,16 +1,18 @@
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma';
-import { conflict, validation } from '../lib/errors';
+import { validation } from '../lib/errors';
 import { hashPassword, verifyPassword } from '../lib/password';
 import { sendMail } from '../lib/mailer';
 
 /**
- * Sign-up email verification (PDF §3.1.1).
+ * Email verification at SIGN-IN (PDF §3.1.1).
  *
- * A six-digit code is emailed to the address the person typed, and sign-up
- * refuses to create the account until that code comes back. This proves the
- * address exists and belongs to them, which matters here more than usual:
- * sign-up lets the caller choose the ADMIN role.
+ * A six-digit code is mailed to the address on the account, and the sign-in
+ * only completes once that code comes back — a second factor rather than
+ * identity proof. Sign-up does not ask for a code at all.
+ *
+ * The code is issued only after the password has already been checked, so this
+ * cannot be used to mailbomb an address or to discover which accounts exist.
  */
 
 const TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES ?? 10);
@@ -30,15 +32,20 @@ function generateCode(): string {
 
 const normalise = (email: string) => email.trim().toLowerCase();
 
-/** Issue a code and email it. */
-export async function sendSignUpOtp(rawEmail: string) {
-  const email = normalise(rawEmail);
+/**
+ * Mask an address for display: enough to recognise your own mailbox, not
+ * enough to hand a stranger someone else's full address.
+ */
+export function maskEmail(email: string): string {
+  const [user, domain] = email.split('@');
+  if (!domain) return '***';
+  const head = user.slice(0, Math.min(2, user.length));
+  return `${head}${'*'.repeat(Math.max(1, user.length - head.length))}@${domain}`;
+}
 
-  // Verifying an address that is already an account would be pointless, and
-  // the sign-up would fail at the end anyway. Fail early with the same message
-  // sign-up gives.
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) throw conflict('That email is already registered');
+/** Issue a code and mail it to an existing account's address. */
+export async function sendLoginOtp(rawEmail: string) {
+  const email = normalise(rawEmail);
 
   const latest = await prisma.emailVerification.findFirst({
     where: { email },
@@ -72,6 +79,17 @@ export async function sendSignUpOtp(rawEmail: string) {
   await prisma.emailVerification.create({
     data: { email, codeHash: await hashPassword(code), expiresAt },
   });
+
+  // The demo accounts use addresses that do not exist (admin@dayflow.local,
+  // *@dayflow.test): the relay accepts the mail and then bounces it, so nobody
+  // can ever read the code and those logins would be unusable. Printing it in
+  // development keeps them working. Guarded by NODE_ENV — in production this
+  // would be a live credential sitting in the logs.
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`
+[otp] verification code for ${email}: ${code}
+`);
+  }
 
   const { delivered } = await sendMail(
     email,

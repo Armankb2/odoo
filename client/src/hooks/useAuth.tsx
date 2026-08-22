@@ -4,7 +4,7 @@ import { api, type CurrentUser, type Role } from '../lib/api';
 interface AuthValue {
   user: CurrentUser | null;
   loading: boolean;
-  signIn: (identifier: string, password: string, role: Role) => Promise<void>;
+  signIn: (identifier: string, password: string, role: Role, otp: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const signIn = useCallback(
-    async (identifier: string, password: string, role: Role) => {
-      await api.post('/api/auth/login', { identifier, password, role });
+    async (identifier: string, password: string, role: Role, otp: string) => {
+      await api.post('/api/auth/login', { identifier, password, role, otp });
       await refresh();
     },
     [refresh],

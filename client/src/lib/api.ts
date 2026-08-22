@@ -21,12 +21,19 @@ export class ApiError extends Error {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const isForm = body instanceof FormData;
-  const res = await fetch(path, {
-    method,
-    credentials: 'include',
-    headers: isForm || body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: isForm ? body : body === undefined ? undefined : JSON.stringify(body),
-  });
+
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method,
+      credentials: 'include',
+      headers: isForm || body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: isForm ? body : body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    // fetch only rejects for genuine network failures, not HTTP errors.
+    throw new ApiError(0, 'NETWORK', 'Cannot reach the server. Is the API running?');
+  }
 
   if (res.status === 204) return undefined as T;
 
@@ -40,6 +47,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     const e = payload?.error;
+
+    // The API always answers errors as { error: { code, message } }. A 5xx with
+    // no body at all did not come from the API — in development it is the Vite
+    // proxy failing to reach the server on :4000, which it reports as an empty
+    // 500. "Request failed (500)" sends you hunting through server code for a
+    // bug that is not there; say what it actually is.
+    if (!e && res.status >= 500) {
+      throw new ApiError(
+        res.status,
+        'SERVER_UNREACHABLE',
+        'Cannot reach the API server. Start it with `npm run dev` in server/.',
+      );
+    }
+
     throw new ApiError(
       res.status,
       e?.code ?? 'UNKNOWN',
